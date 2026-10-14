@@ -41,4 +41,4 @@ try {
     http_response_code(500);
     exit('Unable to connect to the database. Please try again later.');
 }
-```
+
