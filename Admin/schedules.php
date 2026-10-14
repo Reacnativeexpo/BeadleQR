@@ -2573,7 +2573,7 @@ foreach ($schedules as $schedule) {
                         <th>Teacher</th>
                         <th>Class</th>
                         <th>Room</th>
-                        <th>QR Session</th>
+                       
                         <th>Created</th>
                         <th>Actions</th>
 
@@ -2825,78 +2825,6 @@ foreach ($schedules as $schedule) {
                                 </td>
 
 
-                                <!-- QR SESSION -->
-
-                                <td class="qr-cell">
-
-                                    <?php if (
-                                        !empty($sch['qr_token']) &&
-                                        $sch['session_status'] === 'active' &&
-                                        !empty($sch['qr_expires_at']) &&
-                                        strtotime($sch['qr_expires_at']) > time()
-                                    ): ?>
-
-                                        <span class="badge badge-green">
-                                            Active
-                                        </span>
-
-                                        <span
-                                            class="qr-token"
-                                            title="<?= e($sch['qr_token']) ?>"
-                                        >
-
-                                            <?= e(
-                                                substr(
-                                                    $sch['qr_token'],
-                                                    0,
-                                                    16
-                                                )
-                                            ) ?>...
-
-                                        </span>
-
-                                        <?php if (!empty($sch['beader_name'])): ?>
-
-                                            <small
-                                                style="
-                                                    color:#888;
-                                                    font-size:12px;
-                                                "
-                                            >
-
-                                                Beader:
-                                                <?= e(
-                                                    $sch['beader_name']
-                                                ) ?>
-
-                                            </small>
-
-                                        <?php endif; ?>
-
-
-                                    <?php elseif (!empty($sch['qr_token'])): ?>
-
-                                        <span class="badge badge-red">
-
-                                            <?= e(
-                                                ucfirst(
-                                                    $sch['session_status']
-                                                    ?? 'Expired'
-                                                )
-                                            ) ?>
-
-                                        </span>
-
-
-                                    <?php else: ?>
-
-                                        <span class="badge badge-gray">
-                                            No Session
-                                        </span>
-
-                                    <?php endif; ?>
-
-                                </td>
 
 
                                 <!-- CREATED -->
@@ -2942,18 +2870,7 @@ foreach ($schedules as $schedule) {
                                     </a>
 
 
-                                    <a
-                                        href="?refresh_qr=<?= e($sch['id']) ?>"
-                                        class="btn btn-warning btn-sm"
-                                        onclick="return confirm('Generate a new QR session for this schedule?')"
-                                    >
-
-                                        <?= !empty($sch['qr_token'])
-                                            ? 'Refresh QR'
-                                            : 'QR'
-                                        ?>
-
-                                    </a>
+                                 
 
 
                                     <a
