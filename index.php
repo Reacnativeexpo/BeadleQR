@@ -163,7 +163,7 @@ h2 { font-family: var(--font-display); font-size: 40px; line-height: 1.25; font-
       <div class="hero-inner">
         <div class="hero-copy">
           <div class="status"><span class="status-dot"></span>System Operational</div>
-          <h1>Smart Teacher<br><span>Attendance System</span></h1>
+          <h1>Teacher Attendance<br><span>Monitoring System</span></h1>
           <p class="hero-description">A secure, QR-based attendance platform that helps administrators, teachers, and section Beadles record and monitor teacher attendance with speed and accuracy.</p>
           <div class="feature-list">
             <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>QR Attendance</span>
