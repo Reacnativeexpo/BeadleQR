@@ -32,7 +32,7 @@ function getInitials($name)
         return '??';
     }
 
-    $parts = preg_split('/\s+/', $name);
+    $parts = preg_split('/\\s+/', $name);
 
     if (count($parts) === 1) {
         return strtoupper(substr($parts[0], 0, 2));
@@ -42,6 +42,51 @@ function getInitials($name)
         substr($parts[0], 0, 1) .
         substr($parts[count($parts) - 1], 0, 1)
     );
+}
+
+/**
+ * Convert a 12-hour time selection to database-compatible 24-hour time.
+ * The database continues storing time as HH:MM:SS.
+ */
+function convert12HourTime($hour, $minute, $period)
+{
+    $hour = (int)$hour;
+    $minute = (int)$minute;
+    $period = strtoupper(trim((string)$period));
+
+    if ($hour < 1 || $hour > 12 || $minute < 0 || $minute > 59) {
+        return null;
+    }
+
+    if (!in_array($period, ['AM', 'PM'], true)) {
+        return null;
+    }
+
+    if ($period === 'AM') {
+        $hour = ($hour === 12) ? 0 : $hour;
+    } else {
+        $hour = ($hour === 12) ? 12 : $hour + 12;
+    }
+
+    return sprintf('%02d:%02d:00', $hour, $minute);
+}
+
+/**
+ * Return selected hour, minute and AM/PM for a database time value.
+ */
+function getTimeParts($time)
+{
+    $timestamp = strtotime((string)$time);
+
+    if ($timestamp === false) {
+        return ['hour' => '8', 'minute' => '00', 'period' => 'AM'];
+    }
+
+    return [
+        'hour' => date('g', $timestamp),
+        'minute' => date('i', $timestamp),
+        'period' => date('A', $timestamp)
+    ];
 }
 
 /*
@@ -65,9 +110,17 @@ if (isset($_POST['save_schedule'])) {
 
     $day = trim($_POST['day'] ?? '');
 
-    $start_time = trim($_POST['start_time'] ?? '');
+    $start_time = convert12HourTime(
+        $_POST['start_hour'] ?? '',
+        $_POST['start_minute'] ?? '',
+        $_POST['start_period'] ?? ''
+    );
 
-    $end_time = trim($_POST['end_time'] ?? '');
+    $end_time = convert12HourTime(
+        $_POST['end_hour'] ?? '',
+        $_POST['end_minute'] ?? '',
+        $_POST['end_period'] ?? ''
+    );
 
     $year_level_id = !empty($_POST['year_level_id'])
         ? (int)$_POST['year_level_id']
@@ -88,8 +141,8 @@ if (isset($_POST['save_schedule'])) {
         !$teacher_id ||
         !$subject_id ||
         !$day ||
-        !$start_time ||
-        !$end_time ||
+        $start_time === null ||
+        $end_time === null ||
         !$year_level_id ||
         !$section_id
     ) {
@@ -1076,6 +1129,25 @@ foreach ($schedules as $schedule) {
             transition: all 0.2s ease;
         }
 
+        .time-select-group {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr) minmax(0, 1fr);
+            align-items: center;
+            gap: 6px;
+        }
+
+        .time-select-group select {
+            min-width: 0;
+            padding: 13px 8px;
+            text-align: center;
+        }
+
+        .time-colon {
+            text-align: center;
+            font-weight: 700;
+            color: #64748b;
+        }
+
         input::placeholder {
             color: #9ca3af;
         }
@@ -1990,41 +2062,77 @@ foreach ($schedules as $schedule) {
                     </div>
 
 
-                    <!-- START TIME -->
+                    <!-- START TIME: 12-HOUR FORMAT -->
+
+                    <?php $startParts = getTimeParts($editSchedule['start_time'] ?? '08:00:00'); ?>
 
                     <div>
-
                         <label>
-                            Start Time
-                            <span style="color:#dc3545;">*</span>
+                            Start Time <span style="color:#dc3545;">*</span>
                         </label>
 
-                        <input
-                            type="time"
-                            name="start_time"
-                            value="<?= e($editSchedule['start_time'] ?? '') ?>"
-                            required
-                        >
+                        <div class="time-select-group">
+                            <select name="start_hour" aria-label="Start hour" required>
+                                <?php for ($hour = 1; $hour <= 12; $hour++): ?>
+                                    <option value="<?= $hour ?>" <?= (int)$startParts['hour'] === $hour ? 'selected' : '' ?>>
+                                        <?= $hour ?>
+                                    </option>
+                                <?php endfor; ?>
+                            </select>
 
+                            <span class="time-colon">:</span>
+
+                            <select name="start_minute" aria-label="Start minute" required>
+                                <?php for ($minute = 0; $minute <= 59; $minute++): ?>
+                                    <?php $minuteValue = sprintf('%02d', $minute); ?>
+                                    <option value="<?= $minuteValue ?>" <?= $startParts['minute'] === $minuteValue ? 'selected' : '' ?>>
+                                        <?= $minuteValue ?>
+                                    </option>
+                                <?php endfor; ?>
+                            </select>
+
+                            <select name="start_period" aria-label="Start AM or PM" required>
+                                <option value="AM" <?= $startParts['period'] === 'AM' ? 'selected' : '' ?>>AM</option>
+                                <option value="PM" <?= $startParts['period'] === 'PM' ? 'selected' : '' ?>>PM</option>
+                            </select>
+                        </div>
                     </div>
 
 
-                    <!-- END TIME -->
+                    <!-- END TIME: 12-HOUR FORMAT -->
+
+                    <?php $endParts = getTimeParts($editSchedule['end_time'] ?? '09:00:00'); ?>
 
                     <div>
-
                         <label>
-                            End Time
-                            <span style="color:#dc3545;">*</span>
+                            End Time <span style="color:#dc3545;">*</span>
                         </label>
 
-                        <input
-                            type="time"
-                            name="end_time"
-                            value="<?= e($editSchedule['end_time'] ?? '') ?>"
-                            required
-                        >
+                        <div class="time-select-group">
+                            <select name="end_hour" aria-label="End hour" required>
+                                <?php for ($hour = 1; $hour <= 12; $hour++): ?>
+                                    <option value="<?= $hour ?>" <?= (int)$endParts['hour'] === $hour ? 'selected' : '' ?>>
+                                        <?= $hour ?>
+                                    </option>
+                                <?php endfor; ?>
+                            </select>
 
+                            <span class="time-colon">:</span>
+
+                            <select name="end_minute" aria-label="End minute" required>
+                                <?php for ($minute = 0; $minute <= 59; $minute++): ?>
+                                    <?php $minuteValue = sprintf('%02d', $minute); ?>
+                                    <option value="<?= $minuteValue ?>" <?= $endParts['minute'] === $minuteValue ? 'selected' : '' ?>>
+                                        <?= $minuteValue ?>
+                                    </option>
+                                <?php endfor; ?>
+                            </select>
+
+                            <select name="end_period" aria-label="End AM or PM" required>
+                                <option value="AM" <?= $endParts['period'] === 'AM' ? 'selected' : '' ?>>AM</option>
+                                <option value="PM" <?= $endParts['period'] === 'PM' ? 'selected' : '' ?>>PM</option>
+                            </select>
+                        </div>
                     </div>
 
 
