@@ -1,40 +1,16 @@
-
+```php
 <?php
-
-/*
-|--------------------------------------------------------------------------
-| LOAD COMPOSER AUTOLOAD
-|--------------------------------------------------------------------------
-*/
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-/*
-|--------------------------------------------------------------------------
-| LOAD ENVIRONMENT VARIABLES
-|--------------------------------------------------------------------------
-*/
-
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
-
-/*
-|--------------------------------------------------------------------------
-| SUPABASE DATABASE CREDENTIALS
-|--------------------------------------------------------------------------
-*/
 
 $host     = $_ENV['DB_HOST'] ?? 'aws-0-ap-southeast-1.pooler.supabase.com';
 $port     = $_ENV['DB_PORT'] ?? '5432';
 $dbname   = $_ENV['DB_NAME'] ?? 'postgres';
 $user     = $_ENV['DB_USER'] ?? 'postgres.rpikbrrkqmpfpfyhuvzk';
 $password = $_ENV['DB_PASSWORD'] ?? '';
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE DATABASE CONFIGURATION
-|--------------------------------------------------------------------------
-*/
 
 if (
     trim($host) === '' ||
@@ -43,39 +19,26 @@ if (
     trim($user) === '' ||
     $password === ''
 ) {
-    error_log('Database configuration is incomplete.');
-
+    error_log('BeadleQR: Database configuration is incomplete.');
     http_response_code(500);
     exit('Database configuration error.');
 }
-
-/*
-|--------------------------------------------------------------------------
-| CONNECT TO SUPABASE
-|--------------------------------------------------------------------------
-*/
 
 try {
 
     $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require";
 
-    $conn = new PDO(
-        $dsn,
-        $user,
-        $password,
-        [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => false,
-        ]
-    );
+    $conn = new PDO($dsn, $user, $password, [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ]);
 
 } catch (PDOException $e) {
 
-    error_log('Database connection failed: ' . $e->getMessage());
+    error_log('BeadleQR database connection failed: ' . $e->getMessage());
 
     http_response_code(500);
     exit('Unable to connect to the database. Please try again later.');
 }
-
-// Do not add a closing PHP tag.
+```
