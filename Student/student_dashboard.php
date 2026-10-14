@@ -33,6 +33,12 @@ function formatTime($time)
     return date('h:i A', strtotime($time));
 }
 
+function toSeconds($time)
+{
+    $p = array_pad(explode(':', (string)$time), 3, 0);
+    return ((int)$p[0] * 3600) + ((int)$p[1] * 60) + (int)$p[2];
+}
+
 /* =========================================================
    GET BEADLE INFORMATION
    ========================================================= */
@@ -611,6 +617,33 @@ $stmt->execute([
 
 $activeSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+/* =========================================================
+   ATTENDANCE SUMMARY (donut) + TODAY'S TIMELINE
+   ========================================================= */
+
+// Donut counts ("Leave Absent" counts as Absent)
+$statusCounts = ['Present' => 0, 'Late' => 0, 'Absent' => 0];
+
+foreach ($teacherAttendance as $att) {
+    $s = $att['status'] === 'Leave Absent' ? 'Absent' : $att['status'];
+    if (isset($statusCounts[$s])) {
+        $statusCounts[$s]++;
+    }
+}
+
+$statusTotal = array_sum($statusCounts);
+
+// Today's classes, in time order
+$todayClasses = array_values(array_filter($subjects, function ($r) use ($currentDay) {
+    return strtolower(trim($r['day'])) === $currentDay;
+}));
+
+usort($todayClasses, function ($a, $b) {
+    return strcmp($a['start_time'], $b['start_time']);
+});
+
+$nowSeconds = toSeconds($currentTime);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -618,610 +651,490 @@ $activeSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <head>
 
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>BeadleQR | Dashboard</title>
 
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet">
-
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
 
         :root {
-            --primary: #f97316;
-            --primary-dark: #ea580c;
-            --primary-light: #fb923c;
+            --ink: #0f172a;
+            --ink-2: #334155;
+            --muted: #64748b;
+            --line: #e5e7eb;
+            --line-soft: #f1f5f9;
+            --bg: #f6f7f9;
+            --surface: #ffffff;
 
-            --sidebar-bg: #1e293b;
-            --sidebar-hover: #334155;
+            --brand: #ea580c;
+            --brand-dark: #c2410c;
+            --brand-tint: #fff4ec;
 
-            --card-bg: #ffffff;
-            --body-bg: #f1f5f9;
+            --ok-bg: #dcfce7;   --ok-fg: #166534;
+            --warn-bg: #fef3c7; --warn-fg: #92400e;
+            --bad-bg: #fee2e2;  --bad-fg: #991b1b;
+            --neutral-bg: #f1f5f9; --neutral-fg: #475569;
 
-            --text-dark: #1e293b;
-            --text-muted: #64748b;
-
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-            --purple: #8b5cf6;
+            --radius: 10px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
+        * { box-sizing: border-box; }
 
         body {
-            background: var(--body-bg);
-            min-height: 100vh;
-            color: var(--text-dark);
+            margin: 0;
+            font-family: 'Manrope', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible {
+            outline: 2px solid var(--brand);
+            outline-offset: 2px;
         }
 
         /* =====================================================
-           SIDEBAR
+           TOP NAVIGATION
            ===================================================== */
 
-        .sidebar {
-            position: fixed;
-            left: 0;
+        .topnav {
+            position: sticky;
             top: 0;
-            width: 260px;
-            height: 100vh;
-            background: var(--sidebar-bg);
             z-index: 1000;
-            transition: all .3s ease;
-            overflow-y: auto;
+            background: var(--surface);
+            border-bottom: 1px solid var(--line);
         }
 
-        .sidebar-header {
-            padding: 25px 20px;
-            border-bottom: 1px solid rgba(255,255,255,.1);
-            text-align: center;
-        }
-
-        .sidebar-logo {
-            color: white;
-            font-size: 20px;
-            font-weight: 700;
-
+        .topnav-inner {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 28px;
+            height: 64px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 32px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
             gap: 10px;
-        }
-
-        .sidebar-logo i {
-            color: var(--primary);
-            font-size: 28px;
-        }
-
-        .sidebar-subtitle {
-            color: rgba(255,255,255,.5);
-            font-size: 11px;
-            margin-top: 5px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .sidebar-menu {
-            padding: 20px 15px;
-        }
-
-        .menu-label {
-            color: rgba(255,255,255,.4);
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            padding: 0 12px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .sidebar-menu a {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-
-            padding: 12px 15px;
-
-            color: rgba(255,255,255,.7);
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--ink);
             text-decoration: none;
-
-            border-radius: 10px;
-            margin-bottom: 5px;
-
-            font-size: 14px;
-            font-weight: 500;
-
-            transition: all .3s ease;
+            letter-spacing: -.01em;
         }
 
-        .sidebar-menu a i {
-            width: 22px;
-            text-align: center;
+        .brand-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: var(--brand);
+            color: #fff;
+            display: grid;
+            place-items: center;
             font-size: 16px;
         }
 
-        .sidebar-menu a:hover,
-        .sidebar-menu a.active {
-            background: var(--sidebar-hover);
-            color: white;
+        .nav-links {
+            display: flex;
+            align-items: stretch;
+            gap: 4px;
+            height: 100%;
         }
 
-        .sidebar-menu a.active {
-            background: linear-gradient(
-                135deg,
-                var(--primary),
-                var(--primary-dark)
-            );
-
-            box-shadow: 0 4px 15px rgba(249,115,22,.3);
-        }
-
-        .sidebar-footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-
-            padding: 20px 15px;
-
-            border-top: 1px solid rgba(255,255,255,.1);
-        }
-
-        .logout-btn {
+        .nav-links a {
             display: flex;
             align-items: center;
-            gap: 12px;
-
-            padding: 12px 15px;
-
-            color: #ef4444;
+            gap: 8px;
+            padding: 0 14px;
+            color: var(--muted);
             text-decoration: none;
-
-            border-radius: 10px;
-
-            font-size: 14px;
-            font-weight: 500;
-
-            transition: all .3s ease;
-
-            background: rgba(239,68,68,.1);
-        }
-
-        .logout-btn:hover {
-            background: rgba(239,68,68,.2);
-            color: #f87171;
-        }
-
-        /* =====================================================
-           MAIN CONTENT
-           ===================================================== */
-
-        .main-content {
-            margin-left: 260px;
-            min-height: 100vh;
-        }
-
-        .topbar {
-            background: white;
-            height: 70px;
-
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-
-            padding: 0 35px;
-
-            box-shadow: 0 2px 10px rgba(0,0,0,.04);
-
-            position: sticky;
-            top: 0;
-
-            z-index: 100;
-        }
-
-        .topbar-title {
-            font-size: 18px;
             font-weight: 600;
-            color: var(--text-dark);
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            transition: color .15s ease, border-color .15s ease;
         }
 
-        .topbar-title span {
-            color: var(--text-muted);
-            font-size: 13px;
-            font-weight: 400;
-            margin-left: 8px;
+        .nav-links a:hover { color: var(--ink); }
+
+        .nav-links a.active {
+            color: var(--brand-dark);
+            border-bottom-color: var(--brand);
         }
 
-        .user-info {
+        .nav-right {
+            margin-left: auto;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .user-avatar {
-            width: 40px;
-            height: 40px;
-
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-
-            background: linear-gradient(
-                135deg,
-                var(--primary),
-                var(--primary-dark)
-            );
-
-            color: white;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            font-size: 16px;
+            background: var(--ink);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 13px;
+            font-weight: 700;
         }
 
         .user-name {
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.2;
         }
 
         .user-role {
-            font-size: 11px;
-            color: var(--text-muted);
+            font-size: 12px;
+            color: var(--muted);
         }
 
-        .content-area {
-            padding: 30px 35px;
-        }
-
-        /* =====================================================
-           WELCOME
-           ===================================================== */
-
-        .welcome-card {
-            background: linear-gradient(
-                135deg,
-                #ffffff,
-                #fff7ed
-            );
-
-            border: 1px solid #fed7aa;
-
-            border-radius: 16px;
-
-            padding: 25px 28px;
-
-            margin-bottom: 25px;
-
-            display: flex;
+        .logout-link {
+            display: inline-flex;
             align-items: center;
-            justify-content: space-between;
-
-            overflow: hidden;
-        }
-
-        .welcome-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .welcome-title span {
-            color: var(--primary);
-        }
-
-        .welcome-text {
-            color: var(--text-muted);
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: var(--ink-2);
+            text-decoration: none;
+            font-weight: 600;
             font-size: 13px;
+            transition: background .15s ease, color .15s ease, border-color .15s ease;
         }
 
-        .welcome-icon {
-            width: 70px;
-            height: 70px;
-
-            border-radius: 18px;
-
-            background: rgba(249,115,22,.12);
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            color: var(--primary);
-
-            font-size: 32px;
+        .logout-link:hover {
+            background: var(--bad-bg);
+            border-color: #fecaca;
+            color: var(--bad-fg);
         }
 
         /* =====================================================
-           STAT CARDS
+           PAGE
            ===================================================== */
 
-        .stat-card {
-            background: white;
-
-            border-radius: 15px;
-
-            padding: 22px;
-
-            border: 1px solid #e2e8f0;
-
-            height: 100%;
-
-            transition: all .3s ease;
-
-            position: relative;
-            overflow: hidden;
+        .page {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 32px 28px 56px;
         }
 
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(15,23,42,.08);
-        }
-
-        .stat-icon {
-            width: 48px;
-            height: 48px;
-
-            border-radius: 12px;
-
+        .page-head {
             display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            margin: 0 0 4px;
+        }
+
+        .page-sub {
+            color: var(--muted);
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .today-pill {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-
-            font-size: 20px;
-
-            margin-bottom: 15px;
+            gap: 8px;
+            padding: 8px 14px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--ink-2);
         }
 
-        .stat-orange .stat-icon {
-            background: rgba(249,115,22,.12);
-            color: var(--primary);
+        .today-pill i { color: var(--brand); }
+
+        /* =====================================================
+           STAT STRIP
+           ===================================================== */
+
+        .stat-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
         }
 
-        .stat-green .stat-icon {
-            background: rgba(16,185,129,.12);
-            color: var(--success);
+        .stat {
+            padding: 20px 24px;
+            border-right: 1px solid var(--line);
         }
 
-        .stat-blue .stat-icon {
-            background: rgba(59,130,246,.12);
-            color: var(--info);
-        }
-
-        .stat-purple .stat-icon {
-            background: rgba(139,92,246,.12);
-            color: var(--purple);
-        }
+        .stat:last-child { border-right: none; }
 
         .stat-label {
-            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
             font-size: 13px;
-            margin-bottom: 5px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .stat-label i {
+            color: var(--brand);
+            width: 16px;
+            text-align: center;
         }
 
         .stat-number {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--text-dark);
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            line-height: 1.1;
         }
 
         /* =====================================================
-           SECTION CARD
+           PANELS
            ===================================================== */
 
-        .section-card {
-            background: white;
-
-            border-radius: 15px;
-
-            border: 1px solid #e2e8f0;
-
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            margin-top: 24px;
             overflow: hidden;
-
-            margin-top: 25px;
         }
 
-        .section-header {
-            padding: 18px 22px;
-
-            border-bottom: 1px solid #e2e8f0;
-
+        .panel-head {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--line);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
         }
 
-        .section-title {
-            font-size: 16px;
-            font-weight: 600;
-
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .panel-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -.01em;
         }
 
-        .section-title i {
-            color: var(--primary);
+        .panel-sub {
+            color: var(--muted);
+            font-size: 13px;
+            margin: 2px 0 0;
         }
 
-        .section-subtitle {
-            color: var(--text-muted);
+        .count-pill {
+            background: var(--neutral-bg);
+            color: var(--neutral-fg);
+            border-radius: 999px;
+            padding: 4px 12px;
             font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
         }
 
-        .section-body {
-            padding: 0;
+        .panel-body-pad { padding: 18px 24px; }
+
+        .section-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            margin: 0 8px 8px 0;
+            background: var(--brand-tint);
+            border: 1px solid #fed7aa;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--brand-dark);
         }
 
         /* =====================================================
            TABLE
            ===================================================== */
 
-        .table-container {
-            overflow-x: auto;
-        }
+        .table-wrap { overflow-x: auto; }
 
-        .custom-table {
+        .data-table {
+            width: 100%;
             margin: 0;
-            min-width: 850px;
+            border-collapse: collapse;
+            min-width: 820px;
         }
 
-        .custom-table thead th {
-            background: #f8fafc;
-
-            color: #475569;
-
-            font-size: 11px;
-
-            text-transform: uppercase;
-
-            letter-spacing: .5px;
-
-            font-weight: 600;
-
-            padding: 14px 18px;
-
-            border-bottom: 1px solid #e2e8f0;
-
+        .data-table thead th {
+            background: #fafbfc;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--line);
             white-space: nowrap;
+            text-align: left;
         }
 
-        .custom-table tbody td {
-            padding: 15px 18px;
-
+        .data-table tbody td {
+            padding: 14px 20px;
             vertical-align: middle;
-
-            border-bottom: 1px solid #f1f5f9;
-
-            font-size: 13px;
-
-            color: #475569;
+            border-bottom: 1px solid var(--line-soft);
+            color: var(--ink-2);
         }
 
-        .custom-table tbody tr:last-child td {
-            border-bottom: none;
-        }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table tbody tr:hover { background: #fcfcfd; }
 
-        .custom-table tbody tr:hover {
-            background: #fffaf5;
-        }
-
-        .subject-name {
-            font-weight: 600;
-            color: var(--text-dark);
+        .data-table tbody tr.is-editing {
+            background: var(--brand-tint);
         }
 
         .subject-code {
             display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--brand-dark);
+            background: var(--brand-tint);
+            border-radius: 5px;
+            padding: 2px 7px;
+            margin-bottom: 3px;
+        }
 
-            background: #fff7ed;
-
-            color: var(--primary-dark);
-
-            border-radius: 6px;
-
-            padding: 4px 7px;
-
-            font-size: 10px;
-
-            font-weight: 600;
-
-            margin-bottom: 4px;
+        .subject-name {
+            font-weight: 700;
+            color: var(--ink);
         }
 
         .teacher-name {
-            font-weight: 500;
-            color: var(--text-dark);
-        }
-
-        .schedule-text {
+            font-weight: 600;
+            color: var(--ink);
             white-space: nowrap;
         }
 
-        .room-badge {
+        .teacher-name i { color: var(--muted); margin-right: 6px; }
+
+        .nowrap { white-space: nowrap; }
+
+        .tag {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-
-            padding: 5px 9px;
-
-            background: #f1f5f9;
-
-            color: #475569;
-
+            gap: 6px;
+            padding: 4px 10px;
             border-radius: 6px;
-
-            font-size: 11px;
-        }
-
-        .day-badge {
-            display: inline-block;
-
-            padding: 5px 9px;
-
-            border-radius: 6px;
-
-            background: #eef2ff;
-
-            color: #4f46e5;
-
-            font-size: 11px;
-
-            font-weight: 600;
-        }
-
-        /* =====================================================
-           SCAN BUTTON
-           ===================================================== */
-
-        .scan-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-
-            background: var(--primary);
-
-            color: white;
-
-            text-decoration: none;
-
-            padding: 8px 13px;
-
-            border-radius: 8px;
-
+            background: var(--neutral-bg);
+            color: var(--neutral-fg);
             font-size: 12px;
-
             font-weight: 600;
-
-            transition: all .3s ease;
+            white-space: nowrap;
         }
 
-        .scan-btn:hover {
-            background: var(--primary-dark);
-            color: white;
+        .tag-day {
+            background: #eef2ff;
+            color: #4338ca;
+        }
 
-            transform: translateY(-1px);
+        .muted-small {
+            color: var(--muted);
+            font-size: 12px;
         }
 
         /* =====================================================
-           REPORT BUTTON / ACTION BUTTONS
+           STATUS
            ===================================================== */
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 11px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-badge::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .status-present { background: var(--ok-bg);   color: var(--ok-fg); }
+        .status-late    { background: var(--warn-bg); color: var(--warn-fg); }
+        .status-absent  { background: var(--bad-bg);  color: var(--bad-fg); }
+        .status-total   { background: var(--neutral-bg); color: var(--neutral-fg); }
+
+        /* =====================================================
+           BUTTONS
+           ===================================================== */
+
+        .btn-app {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .15s ease, border-color .15s ease, color .15s ease;
+        }
+
+        .btn-primary-app { background: var(--brand); color: #fff; }
+        .btn-primary-app:hover { background: var(--brand-dark); color: #fff; }
+
+        .btn-ghost {
+            background: var(--surface);
+            border-color: var(--line);
+            color: var(--ink-2);
+        }
+        .btn-ghost:hover { background: var(--line-soft); color: var(--ink); }
+
+        .btn-danger-soft {
+            background: var(--bad-bg);
+            color: var(--bad-fg);
+        }
+        .btn-danger-soft:hover { background: #fecaca; color: var(--bad-fg); }
+
+        .btn-disabled {
+            background: var(--neutral-bg);
+            color: #94a3b8;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
 
         .action-buttons {
             display: flex;
@@ -1230,472 +1143,414 @@ $activeSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
             flex-wrap: wrap;
         }
 
-        .report-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-
-            background: #ef4444;
-            color: white;
-
-            border: none;
-            text-decoration: none;
-
-            padding: 8px 13px;
-            border-radius: 8px;
-
-            font-size: 12px;
-            font-weight: 600;
-
-            transition: all .3s ease;
-            cursor: pointer;
-        }
-
-        .report-btn:hover {
-            background: #dc2626;
-            color: white;
-            transform: translateY(-1px);
-        }
-
         /* =====================================================
-           DISABLED SCAN BUTTON
+           REMARKS (edit / save)
            ===================================================== */
-
-        .scan-btn.disabled-scan {
-            background: #cbd5e1;
-            color: #64748b;
-            cursor: not-allowed;
-            pointer-events: none;
-            opacity: .8;
-        }
-
-        .scan-btn.disabled-scan:hover {
-            background: #cbd5e1;
-            color: #64748b;
-            transform: none;
-        }
-
-        /* =====================================================
-           STATUS BADGES
-           ===================================================== */
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-
-            min-width: 32px;
-
-            padding: 5px 9px;
-
-            border-radius: 6px;
-
-            font-size: 11px;
-
-            font-weight: 600;
-        }
-
-        .status-present {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .status-late {
-            background: #fef3c7;
-            color: #b45309;
-        }
-
-        .status-absent {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        .status-total {
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-        /* =====================================================
-           REMARKS
-           ===================================================== */
-
-        .remarks-form {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            min-width: 280px;
-        }
 
         .remarks-input {
+            width: 100%;
             min-width: 220px;
-            border: 1px solid #e2e8f0;
-            border-radius: 7px;
-            font-size: 12px;
-            padding: 7px 10px;
-        }
-
-        .remarks-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 .15rem rgba(249,115,22,.12);
-        }
-
-        .save-remarks-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-
-            background: var(--primary);
-            color: white;
-
-            border: none;
-            border-radius: 7px;
-
             padding: 7px 11px;
-
-            font-size: 11px;
-            font-weight: 600;
-
-            cursor: pointer;
-
-            transition: all .2s ease;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: transparent;
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--ink);
+            text-overflow: ellipsis;
         }
 
-        .save-remarks-btn:hover {
-            background: var(--primary-dark);
-            color: white;
-            transform: translateY(-1px);
+        .remarks-input[readonly] { cursor: default; }
+        .remarks-input[readonly]::placeholder { color: #94a3b8; }
+
+        .remarks-input:not([readonly]) {
+            background: var(--surface);
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, .12);
         }
+
+        .row-actions { display: flex; gap: 6px; }
+        .row-actions [data-role="editing"] { display: none; }
+        tr.is-editing .row-actions [data-role="viewing"] { display: none; }
+        tr.is-editing .row-actions [data-role="editing"] { display: inline-flex; }
 
         /* =====================================================
-           ACTIVE SESSION
+           ACTIVE SESSIONS
            ===================================================== */
-
-        .active-session {
-            padding: 18px 22px;
-
-            background: linear-gradient(
-                135deg,
-                #fff7ed,
-                #ffffff
-            );
-
-            border-bottom: 1px solid #fed7aa;
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            gap: 20px;
-        }
-
-        .active-session:last-child {
-            border-bottom: none;
-        }
 
         .live-indicator {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-
-            color: #dc2626;
-
-            font-size: 11px;
-
+            gap: 8px;
+            color: var(--bad-fg);
+            font-size: 12px;
             font-weight: 700;
-
-            text-transform: uppercase;
         }
 
         .live-dot {
             width: 8px;
             height: 8px;
-
-            background: #ef4444;
-
             border-radius: 50%;
-
-            animation: pulse 1.5s infinite;
+            background: #ef4444;
+            animation: pulse 1.6s ease-in-out infinite;
         }
 
         @keyframes pulse {
-            0% {
-                opacity: 1;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: .4;
-                transform: scale(1.25);
-            }
-
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: .35; }
         }
+
+        .session-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .session-row:last-child { border-bottom: none; }
+
+        .session-meta {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .session-meta i { margin-right: 5px; }
 
         /* =====================================================
            EMPTY STATE
            ===================================================== */
 
         .empty-state {
-            padding: 45px 20px;
-
+            padding: 48px 20px;
             text-align: center;
-
-            color: var(--text-muted);
+            color: var(--muted);
         }
 
         .empty-state i {
-            font-size: 40px;
-
+            font-size: 32px;
             color: #cbd5e1;
-
             margin-bottom: 12px;
         }
 
         .empty-state h6 {
-            color: #475569;
-            font-weight: 600;
+            color: var(--ink-2);
+            font-weight: 700;
+            margin-bottom: 2px;
         }
 
-        .empty-state p {
-            font-size: 12px;
-            margin-bottom: 0;
-        }
+        .empty-state p { margin: 0; font-size: 13px; }
 
         /* =====================================================
-           SECTION PILLS
+           MODALS / TOAST
            ===================================================== */
 
-        .assigned-section {
-            display: inline-flex;
+        .modal-content {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, .2);
+            font-family: 'Manrope', sans-serif;
+        }
 
+        .modal-header { border-bottom: 1px solid var(--line); padding: 18px 22px; }
+        .modal-body   { padding: 22px; }
+        .modal-footer { border-top: 1px solid var(--line); padding: 14px 22px; gap: 8px; }
+        .modal-title  { font-weight: 800; font-size: 18px; }
+
+        .form-label { font-weight: 700; font-size: 13px; }
+
+        .confirm-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--brand-tint);
+            color: var(--brand);
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+            margin: 0 auto 14px;
+        }
+
+        .toast-stack {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .app-toast {
+            display: flex;
             align-items: center;
-
-            gap: 7px;
-
-            padding: 7px 11px;
-
-            background: #f8fafc;
-
-            border: 1px solid #e2e8f0;
-
-            border-radius: 8px;
-
-            font-size: 11px;
-
-            color: #475569;
-
-            margin: 3px;
+            gap: 12px;
+            min-width: 280px;
+            max-width: 380px;
+            padding: 14px 16px;
+            background: var(--ink);
+            color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, .25);
+            font-size: 14px;
+            font-weight: 600;
+            animation: toast-in .25s ease-out;
         }
 
-        .assigned-section i {
-            color: var(--primary);
+        .app-toast i { color: #4ade80; font-size: 18px; }
+        .app-toast.info i { color: #93c5fd; }
+
+        @keyframes toast-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         /* =====================================================
-           INCREASE MAIN CONTENT FONT SIZES
-           SIDEBAR REMAINS UNCHANGED
+           OVERVIEW ROW (timeline + donut)
            ===================================================== */
 
-        .topbar-title {
-            font-size: 21px;
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            margin-top: 24px;
         }
 
-        .topbar-title span {
-            font-size: 15px;
+        .overview-grid .panel {
+            margin-top: 0;
+            min-width: 0;
         }
 
-        .user-name {
-            font-size: 15px;
+        /* ---------- Today's timeline ---------- */
+
+        .timeline {
+            display: flex;
+            gap: 14px;
+            padding: 18px 24px;
+            overflow-x: auto;
         }
 
-        .user-role {
-            font-size: 13px;
+        .tl-card {
+            flex: 0 0 240px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            background: var(--surface);
+            position: relative;
+            transition: opacity .2s ease;
         }
 
-        .welcome-title {
-            font-size: 28px;
+        .tl-card.is-ongoing {
+            border-color: var(--brand);
+            background: var(--brand-tint);
+            box-shadow: 0 0 0 3px rgba(234, 88, 12, .12);
         }
 
-        .welcome-text {
-            font-size: 15px;
-        }
+        .tl-card.is-ended { opacity: .6; }
 
-        .stat-label {
-            font-size: 15px;
-        }
-
-        .stat-number {
-            font-size: 32px;
-        }
-
-        .section-title {
-            font-size: 19px;
-        }
-
-        .section-subtitle {
-            font-size: 14px;
-        }
-
-        .custom-table thead th {
-            font-size: 13px;
-        }
-
-        .custom-table tbody td {
-            font-size: 15px;
-        }
-
-        .subject-code {
+        .tl-time {
             font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            margin-bottom: 6px;
         }
 
-        .room-badge {
+        .tl-state {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--neutral-bg);
+            color: var(--neutral-fg);
+            margin-bottom: 8px;
+        }
+
+        .is-ongoing .tl-state { background: var(--brand); color: #fff; }
+        .is-next .tl-state { background: var(--brand-tint); color: var(--brand-dark); }
+
+        .tl-meta {
+            color: var(--muted);
+            font-size: 12px;
+            margin: 4px 0 12px;
+        }
+
+        .tl-card .btn-app { padding: 5px 12px; }
+
+        /* ---------- Donut ---------- */
+
+        .donut-wrap {
+            padding: 18px 24px 22px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .donut {
+            position: relative;
+            width: 130px;
+            height: 130px;
+            flex: none;
+        }
+
+        .donut svg { transform: rotate(-90deg); }
+
+        .donut-center {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-content: center;
+            text-align: center;
+        }
+
+        .donut-center strong { font-size: 24px; font-weight: 800; line-height: 1; }
+        .donut-center span { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+        .legend {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            font-size: 13px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .legend li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .legend li:last-child { margin-bottom: 0; }
+
+        .legend i {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .legend b { margin-left: auto; padding-left: 14px; }
+
+        /* ---------- Filters ---------- */
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--line);
+            background: #fafbfc;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1 1 240px;
+            max-width: 340px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
             font-size: 13px;
         }
 
-        .day-badge {
+        .search-box input,
+        .date-filter {
+            width: 100%;
+            padding: 8px 12px 8px 34px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            font-family: inherit;
             font-size: 13px;
+            background: var(--surface);
+            color: var(--ink);
         }
 
-        .status-badge {
+        .date-filter { width: auto; padding-left: 12px; }
+
+        .chip-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .chip {
+            border: 1px solid var(--line);
+            background: var(--surface);
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--ink-2);
+            cursor: pointer;
+            transition: background .15s ease, border-color .15s ease, color .15s ease;
+        }
+
+        .chip:hover { background: var(--line-soft); }
+
+        .chip.active {
+            background: var(--brand);
+            border-color: var(--brand);
+            color: #fff;
+        }
+
+        .chip .n { opacity: .7; margin-left: 6px; }
+
+        .filter-reset {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: var(--brand-dark);
+            font-weight: 700;
             font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
         }
 
-        .scan-btn {
-            font-size: 14px;
-        }
-
-        .report-btn {
-            font-size: 14px;
-        }
-
-        .remarks-input {
-            font-size: 14px;
-        }
-
-        .save-remarks-btn {
-            font-size: 13px;
-        }
-
-        .live-indicator {
-            font-size: 13px;
-        }
-
-        .empty-state p {
-            font-size: 14px;
-        }
-
-        .assigned-section {
-            font-size: 13px;
-        }
+        .filter-reset:hover { text-decoration: underline; }
 
         /* =====================================================
-           MOBILE
+           RESPONSIVE
            ===================================================== */
 
         @media (max-width: 992px) {
-
-            .sidebar {
-                width: 220px;
-            }
-
-            .main-content {
-                margin-left: 220px;
-            }
-
-            .topbar,
-            .content-area {
-                padding-left: 22px;
-                padding-right: 22px;
-            }
+            .stat-strip { grid-template-columns: repeat(2, 1fr); }
+            .stat:nth-child(2) { border-right: none; }
+            .stat:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+            .overview-grid { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 768px) {
+            .topnav-inner { padding: 0 16px; gap: 12px; }
+            .page { padding: 22px 16px 40px; }
+            .nav-links a span,
+            .user-chip .user-text,
+            .logout-link span { display: none; }
+            .nav-links a { padding: 0 12px; }
+            .page-title { font-size: 22px; }
+            .session-row { flex-direction: column; align-items: flex-start; }
+            .panel-head, .panel-body-pad, .session-row { padding-left: 16px; padding-right: 16px; }
+            .timeline, .donut-wrap, .filter-bar { padding-left: 16px; padding-right: 16px; }
+            .search-box { max-width: none; }
+        }
 
-            .sidebar {
-                width: 70px;
-            }
+        @media (max-width: 480px) {
+            .stat-strip { grid-template-columns: 1fr; }
+            .stat { border-right: none; border-bottom: 1px solid var(--line); }
+            .stat:last-child { border-bottom: none; }
+            .brand span { display: none; }
+            .donut-wrap { flex-direction: column; align-items: flex-start; }
+            .legend { width: 100%; }
+        }
 
-            .sidebar-header {
-                padding: 18px 8px;
-            }
-
-            .sidebar-logo span,
-            .sidebar-subtitle,
-            .menu-label,
-            .sidebar-menu a span,
-            .logout-btn span {
-                display: none;
-            }
-
-            .sidebar-logo {
-                justify-content: center;
-            }
-
-            .sidebar-menu {
-                padding: 15px 8px;
-            }
-
-            .sidebar-menu a {
-                justify-content: center;
-                padding: 12px;
-            }
-
-            .sidebar-menu a i {
-                margin: 0;
-            }
-
-            .sidebar-footer {
-                padding: 10px 8px;
-            }
-
-            .logout-btn {
-                justify-content: center;
-                padding: 12px;
-            }
-
-            .main-content {
-                margin-left: 70px;
-            }
-
-            .topbar {
-                padding: 0 15px;
-            }
-
-            .content-area {
-                padding: 20px 15px;
-            }
-
-            .topbar-title span {
-                display: none;
-            }
-
-            .user-name,
-            .user-role {
-                display: none;
-            }
-
-            .welcome-card {
-                padding: 20px;
-            }
-
-            .welcome-title {
-                font-size: 20px;
-            }
-
-            .welcome-icon {
-                width: 55px;
-                height: 55px;
-                font-size: 24px;
-            }
-
-            .active-session {
-                align-items: flex-start;
-                flex-direction: column;
-            }
+        @media (prefers-reduced-motion: reduce) {
+            .live-dot, .app-toast { animation: none; }
+            .tl-card, .chip { transition: none; }
         }
 
     </style>
@@ -1705,966 +1560,889 @@ $activeSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
 
 <!-- =========================================================
-     SIDEBAR
+     TOP NAVIGATION (replaces sidebar)
      ========================================================= -->
 
-<aside class="sidebar">
+<header class="topnav">
 
-    <div class="sidebar-header">
+    <div class="topnav-inner">
 
-        <div class="sidebar-logo">
-            <i class="fa-solid fa-qrcode"></i>
-            <span>BeadleQR</span>
-        </div>
-
-        <div class="sidebar-subtitle">
-            Beadle Panel
-        </div>
-
-    </div>
-
-    <div class="sidebar-menu">
-
-        <div class="menu-label">
-            Main Menu
-        </div>
-
-        <a href="student_dashboard.php" class="active">
-            <i class="fa-solid fa-gauge-high"></i>
-            <span>Dashboard</span>
-        </a>
-
-        <a href="scan_qr.php">
-            <i class="fa-solid fa-qrcode"></i>
-            <span>Scan QR</span>
-        </a>
-
-    </div>
-
-    <div class="sidebar-footer">
-
-        <a href="../logout.php" class="logout-btn">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span>Logout</span>
-        </a>
-
-    </div>
-
-</aside>
-
-
-<!-- =========================================================
-     MAIN CONTENT
-     ========================================================= -->
-
-<main class="main-content">
-
-    <div class="topbar">
-
-        <div class="topbar-title">
-            Dashboard
-            <span>Beadle Attendance Management</span>
-        </div>
-
-        <div class="user-info">
-
-            <div class="user-avatar">
-                <i class="fa-solid fa-user"></i>
-            </div>
-
-            <div>
-                <div class="user-name">
-                    <?= e($beader_name) ?>
-                </div>
-
-                <div class="user-role">
-                    Student / Beadle
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <div class="content-area">
-
-        <!-- =================================================
-             WELCOME
-             ================================================= -->
-
-        <div class="welcome-card">
-
-            <div>
-
-                <div class="welcome-title">
-                    Welcome back,
-                    <span><?= e($beader_name) ?></span>!
-                </div>
-
-                <div class="welcome-text">
-                    Manage your assigned schedules and record teacher attendance using BeadleQR.
-                </div>
-
-            </div>
-
-            <div class="welcome-icon">
+        <a href="student_dashboard.php" class="brand">
+            <div class="brand-mark">
                 <i class="fa-solid fa-qrcode"></i>
             </div>
+            <span>BeadleQR</span>
+        </a>
+
+        <nav class="nav-links" aria-label="Main">
+
+            <a href="student_dashboard.php" class="active" aria-current="page">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="scan_qr.php">
+                <i class="fa-solid fa-qrcode"></i>
+                <span>Scan QR</span>
+            </a>
+
+        </nav>
+
+        <div class="nav-right">
+
+            <div class="user-chip">
+
+                <div class="user-avatar">
+                    <?= e(strtoupper(mb_substr($beader_name, 0, 1))) ?>
+                </div>
+
+                <div class="user-text">
+                    <div class="user-name"><?= e($beader_name) ?></div>
+                    <div class="user-role">Student / Beadle</div>
+                </div>
+
+            </div>
+
+            <a href="../logout.php" class="logout-link">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Logout</span>
+            </a>
 
         </div>
 
+    </div>
 
-        <!-- =================================================
-             STATS
-             ================================================= -->
+</header>
 
-        <div class="row g-4">
 
-            <div class="col-xl-3 col-md-6">
+<main class="page">
 
-                <div class="stat-card stat-orange">
+    <!-- =====================================================
+         PAGE HEADER
+         ===================================================== -->
 
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-book-open"></i>
-                    </div>
+    <div class="page-head">
 
-                    <div class="stat-label">
-                        Assigned Subjects
-                    </div>
+        <div>
+            <h1 class="page-title">Welcome back, <?= e($beader_name) ?></h1>
+            <p class="page-sub">
+                Scan teacher QR codes and keep track of attendance for your assigned classes.
+            </p>
+        </div>
 
-                    <div class="stat-number">
-                        <?= $totalSubjects ?>
+        <div class="today-pill">
+            <i class="fa-solid fa-calendar-day"></i>
+            <?= e(date('l, F j, Y')) ?>
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         STATS
+         ===================================================== -->
+
+    <section class="stat-strip" aria-label="Summary">
+
+        <div class="stat">
+            <div class="stat-label">
+                <i class="fa-solid fa-book-open"></i>
+                Assigned subjects
+            </div>
+            <div class="stat-number"><?= $totalSubjects ?></div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-label">
+                <i class="fa-solid fa-clipboard-check"></i>
+                Total attendance
+            </div>
+            <div class="stat-number"><?= $totalAttendance ?></div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-label">
+                <i class="fa-solid fa-calendar-day"></i>
+                Today's attendance
+            </div>
+            <div class="stat-number"><?= $totalToday ?></div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-label">
+                <i class="fa-solid fa-circle-check"></i>
+                Completed sessions
+            </div>
+            <div class="stat-number"><?= $totalCompleted ?></div>
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         OVERVIEW: TODAY'S TIMELINE + ATTENDANCE DONUT
+         ===================================================== -->
+
+    <div class="overview-grid">
+
+        <!-- TODAY'S CLASSES -->
+        <section class="panel">
+
+            <div class="panel-head">
+                <div>
+                    <h2 class="panel-title">Today's classes</h2>
+                    <p class="panel-sub"><?= e(date('l')) ?> schedule, in time order</p>
+                </div>
+                <span class="count-pill"><?= count($todayClasses) ?> classes</span>
+            </div>
+
+            <?php if (count($todayClasses) > 0): ?>
+
+                <div class="timeline" id="timeline">
+
+                    <?php foreach ($todayClasses as $c):
+
+                        $st = trim((string)($c['attendance_status'] ?? ''));
+                        $recorded = in_array($st, ['Present', 'Late', 'Absent', 'Leave Absent'], true);
+
+                        $badgeClass = 'status-total';
+                        if ($st === 'Present') {
+                            $badgeClass = 'status-present';
+                        } elseif ($st === 'Late') {
+                            $badgeClass = 'status-late';
+                        } elseif ($st === 'Absent' || $st === 'Leave Absent') {
+                            $badgeClass = 'status-absent';
+                        }
+                    ?>
+
+                        <div class="tl-card"
+                             data-start="<?= toSeconds($c['start_time']) ?>"
+                             data-end="<?= toSeconds($c['end_time']) ?>">
+
+                            <div class="tl-time">
+                                <?= formatTime($c['start_time']) ?> - <?= formatTime($c['end_time']) ?>
+                            </div>
+
+                            <span class="tl-state" data-state>--</span>
+
+                            <div>
+                                <?php if (!empty($c['subject_code'])): ?>
+                                    <div class="subject-code"><?= e($c['subject_code']) ?></div>
+                                <?php endif; ?>
+                                <div class="subject-name"><?= e($c['subject_name']) ?></div>
+                            </div>
+
+                            <div class="tl-meta">
+                                <i class="fa-solid fa-user-tie"></i> <?= e($c['teacher_name']) ?><br>
+                                <i class="fa-solid fa-door-open"></i> <?= e($c['room'] ?: 'No room') ?>
+                            </div>
+
+                            <?php if ($recorded): ?>
+
+                                <span class="status-badge <?= $badgeClass ?>">
+                                    <?= e($st) ?>
+                                </span>
+
+                            <?php else: ?>
+
+                                <a href="scan_qr.php?schedule_id=<?= (int)$c['schedule_id'] ?>"
+                                   class="btn-app btn-primary-app">
+                                    <i class="fa-solid fa-qrcode"></i> Scan
+                                </a>
+
+                            <?php endif; ?>
+
+                        </div>
+
+                    <?php endforeach; ?>
+
+                </div>
+
+            <?php else: ?>
+
+                <div class="empty-state">
+                    <i class="fa-solid fa-mug-hot"></i>
+                    <h6>No classes today</h6>
+                    <p>Check the schedule below for your upcoming classes.</p>
+                </div>
+
+            <?php endif; ?>
+
+        </section>
+
+
+        <!-- ATTENDANCE DONUT -->
+        <section class="panel">
+
+            <div class="panel-head">
+                <div>
+                    <h2 class="panel-title">Attendance overview</h2>
+                    <p class="panel-sub">All recorded classes</p>
+                </div>
+            </div>
+
+            <?php
+            $radius = 54;
+            $circ = 2 * M_PI * $radius;
+            $segments = [
+                ['Present', '#22c55e'],
+                ['Late',    '#f59e0b'],
+                ['Absent',  '#ef4444'],
+            ];
+            $offset = 0;
+            ?>
+
+            <div class="donut-wrap">
+
+                <div class="donut">
+
+                    <svg width="130" height="130" viewBox="0 0 130 130" role="img"
+                         aria-label="Attendance breakdown">
+
+                        <circle cx="65" cy="65" r="<?= $radius ?>" fill="none"
+                                stroke="#f1f5f9" stroke-width="16"></circle>
+
+                        <?php if ($statusTotal > 0): ?>
+
+                            <?php foreach ($segments as $seg):
+
+                                $label = $seg[0];
+                                $color = $seg[1];
+                                $len = ($statusCounts[$label] / $statusTotal) * $circ;
+
+                                if ($len <= 0) {
+                                    continue;
+                                }
+                            ?>
+
+                                <circle cx="65" cy="65" r="<?= $radius ?>" fill="none"
+                                        stroke="<?= $color ?>" stroke-width="16"
+                                        stroke-dasharray="<?= round($len, 2) ?> <?= round($circ - $len, 2) ?>"
+                                        stroke-dashoffset="<?= round(-$offset, 2) ?>"></circle>
+
+                                <?php $offset += $len; ?>
+
+                            <?php endforeach; ?>
+
+                        <?php endif; ?>
+
+                    </svg>
+
+                    <div class="donut-center">
+                        <strong>
+                            <?= $statusTotal > 0
+                                ? round(($statusCounts['Present'] / $statusTotal) * 100) . '%'
+                                : '--' ?>
+                        </strong>
+                        <span>Present</span>
                     </div>
 
                 </div>
 
-            </div>
-
-
-            <div class="col-xl-3 col-md-6">
-
-                <div class="stat-card stat-green">
-
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-clipboard-check"></i>
-                    </div>
-
-                    <div class="stat-label">
-                        Total Attendance
-                    </div>
-
-                    <div class="stat-number">
-                        <?= $totalAttendance ?>
-                    </div>
-
-                </div>
+                <ul class="legend">
+                    <?php foreach ($segments as $seg): ?>
+                        <li>
+                            <i style="background:<?= $seg[1] ?>"></i>
+                            <?= e($seg[0]) ?>
+                            <b><?= (int)$statusCounts[$seg[0]] ?></b>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
 
             </div>
 
+        </section>
 
-            <div class="col-xl-3 col-md-6">
+    </div>
 
-                <div class="stat-card stat-blue">
 
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-calendar-day"></i>
-                    </div>
+    <!-- =====================================================
+         ASSIGNED SECTIONS
+         ===================================================== -->
 
-                    <div class="stat-label">
-                        Today's Attendance
-                    </div>
+    <section class="panel">
 
-                    <div class="stat-number">
-                        <?= $totalToday ?>
-                    </div>
-
-                </div>
-
+        <div class="panel-head">
+            <div>
+                <h2 class="panel-title">Assigned sections</h2>
+                <p class="panel-sub">Sections currently assigned to you</p>
             </div>
+        </div>
 
+        <div class="panel-body-pad">
 
-            <div class="col-xl-3 col-md-6">
+            <?php if (count($assignedSections) > 0): ?>
 
-                <div class="stat-card stat-purple">
+                <?php foreach ($assignedSections as $section): ?>
 
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-circle-check"></i>
-                    </div>
+                    <span class="section-chip">
+                        <i class="fa-solid fa-users"></i>
+                        <?= e($section['year_name']) ?> - <?= e($section['section_name']) ?>
+                    </span>
 
-                    <div class="stat-label">
-                        Completed Sessions
-                    </div>
+                <?php endforeach; ?>
 
-                    <div class="stat-number">
-                        <?= $totalCompleted ?>
-                    </div>
+            <?php else: ?>
 
-                </div>
+                <div class="muted-small">No assigned sections.</div>
 
-            </div>
+            <?php endif; ?>
 
         </div>
 
+    </section>
 
-        <!-- =================================================
-             ASSIGNED SECTIONS
-             ================================================= -->
 
-        <div class="section-card">
+    <!-- =====================================================
+         ACTIVE ATTENDANCE SESSIONS
+         ===================================================== -->
 
-            <div class="section-header">
+    <?php if (count($activeSessions) > 0): ?>
+
+        <section class="panel">
+
+            <div class="panel-head">
 
                 <div>
-
-                    <div class="section-title">
-                        <i class="fa-solid fa-layer-group"></i>
-                        Assigned Sections
-                    </div>
-
-                    <div class="section-subtitle">
-                        Sections currently assigned to you
-                    </div>
-
+                    <h2 class="panel-title">Active attendance sessions</h2>
+                    <p class="panel-sub">Sessions waiting for your scan</p>
                 </div>
+
+                <span class="live-indicator">
+                    <span class="live-dot"></span>
+                    Live
+                </span>
 
             </div>
 
-            <div class="section-body p-3">
+            <div>
 
-                <?php if (count($assignedSections) > 0): ?>
+                <?php foreach ($activeSessions as $session): ?>
 
-                    <?php foreach ($assignedSections as $section): ?>
+                    <?php
+                    /*
+                     * Enable Scan QR only when the session's
+                     * schedule day matches today's day.
+                     */
+                    $sessionDay = strtolower(trim($session['day']));
+                    $isCorrectDay = ($sessionDay === $currentDay);
+                    ?>
 
-                        <span class="assigned-section">
+                    <div class="session-row">
 
-                            <i class="fa-solid fa-users"></i>
+                        <div>
 
-                            <?= e($section['year_name']) ?>
-                            -
-                            <?= e($section['section_name']) ?>
+                            <div class="subject-code">
+                                <?= e($session['subject_code']) ?>
+                            </div>
 
-                        </span>
+                            <div class="subject-name">
+                                <?= e($session['subject_name']) ?>
+                            </div>
+
+                            <div class="session-meta">
+
+                                <i class="fa-solid fa-user-tie"></i>
+                                <?= e($session['teacher_name']) ?>
+
+                                &nbsp;&nbsp;
+
+                                <i class="fa-solid fa-clock"></i>
+                                <?= formatTime($session['start_time']) ?>
+                                -
+                                <?= formatTime($session['end_time']) ?>
+
+                                &nbsp;&nbsp;
+
+                                <i class="fa-solid fa-door-open"></i>
+                                <?= e($session['room'] ?: 'No room') ?>
+
+                            </div>
+
+                        </div>
+
+                        <div>
+
+                            <?php if ($isCorrectDay): ?>
+
+                                <a
+                                    href="scan_qr.php?schedule_id=<?= (int)$session['schedule_id'] ?>"
+                                    class="btn-app btn-primary-app">
+
+                                    <i class="fa-solid fa-qrcode"></i>
+                                    Scan QR
+
+                                </a>
+
+                            <?php else: ?>
+
+                                <span class="btn-app btn-disabled">
+
+                                    <i class="fa-solid fa-ban"></i>
+                                    Not today
+
+                                </span>
+
+                            <?php endif; ?>
+
+                        </div>
+
+                    </div>
+
+                <?php endforeach; ?>
+
+            </div>
+
+        </section>
+
+    <?php endif; ?>
+
+
+    <!-- =====================================================
+         ASSIGNED SUBJECTS
+         ===================================================== -->
+
+    <section class="panel">
+
+        <div class="panel-head">
+
+            <div>
+                <h2 class="panel-title">Assigned subjects</h2>
+                <p class="panel-sub">Your assigned class schedules</p>
+            </div>
+
+            <span class="count-pill"><?= $totalSubjects ?> subjects</span>
+
+        </div>
+
+        <div class="table-wrap">
+
+            <table class="data-table">
+
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Teacher</th>
+                        <th>Section</th>
+                        <th>Room</th>
+                        <th>Day</th>
+                        <th>Schedule</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                <?php if (count($subjects) > 0): ?>
+
+                    <?php foreach ($subjects as $row): ?>
+
+                        <?php
+                        /*
+                         * Enable Scan only when the
+                         * schedule is for today.
+                         */
+                        $scheduleDay = strtolower(trim($row['day']));
+                        $isCorrectDay = ($scheduleDay === $currentDay);
+                        ?>
+
+                        <tr>
+
+                            <td>
+                                <?php if (!empty($row['subject_code'])): ?>
+                                    <div class="subject-code"><?= e($row['subject_code']) ?></div>
+                                <?php endif; ?>
+                                <div class="subject-name"><?= e($row['subject_name']) ?></div>
+                            </td>
+
+                            <td>
+                                <div class="teacher-name">
+                                    <i class="fa-solid fa-user-tie"></i><?= e($row['teacher_name']) ?>
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="tag">
+                                    <?= e($row['year_name']) ?> - <?= e($row['section_name']) ?>
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="tag">
+                                    <i class="fa-solid fa-door-open"></i>
+                                    <?= e($row['room'] ?: 'No room') ?>
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="tag tag-day"><?= e($row['day']) ?></span>
+                            </td>
+
+                            <td class="nowrap">
+                                <?= formatTime($row['start_time']) ?>
+                                -
+                                <?= formatTime($row['end_time']) ?>
+                            </td>
+
+                            <td>
+
+                                <div class="action-buttons">
+
+                                    <?php if ($isCorrectDay): ?>
+
+                                        <a
+                                            href="scan_qr.php?schedule_id=<?= (int)$row['schedule_id'] ?>"
+                                            class="btn-app btn-primary-app">
+
+                                            <i class="fa-solid fa-qrcode"></i>
+                                            Scan
+
+                                        </a>
+
+                                    <?php else: ?>
+
+                                        <span class="btn-app btn-disabled">
+
+                                            <i class="fa-solid fa-ban"></i>
+                                            Not today
+
+                                        </span>
+
+                                    <?php endif; ?>
+
+
+                                    <?php
+                                    $attendanceStatus = trim((string)($row['attendance_status'] ?? ''));
+                                    $attendanceId = (int)($row['attendance_id'] ?? 0);
+
+                                    $showReportButton =
+                                        $attendanceId > 0
+                                        && in_array(
+                                            $attendanceStatus,
+                                            ['Absent', 'Leave Absent'],
+                                            true
+                                        );
+                                    ?>
+
+                                    <?php if ($showReportButton): ?>
+
+                                        <button
+                                            type="button"
+                                            class="btn-app btn-danger-soft"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#absentReportModal"
+                                            data-attendance-id="<?= $attendanceId ?>"
+                                            data-teacher="<?= e($row['teacher_name']) ?>"
+                                            data-subject="<?= e($row['subject_name']) ?>"
+                                            data-status="<?= e($attendanceStatus) ?>"
+                                            data-remarks="<?= e($row['attendance_remarks'] ?? '') ?>">
+
+                                            <i class="fa-solid fa-file-pen"></i>
+                                            Report
+
+                                        </button>
+
+                                    <?php endif; ?>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
 
                     <?php endforeach; ?>
 
                 <?php else: ?>
 
-                    <div class="text-muted small">
-                        No assigned sections.
-                    </div>
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-book-open"></i>
+                                <h6>No assigned subjects</h6>
+                                <p>You currently have no assigned schedules.</p>
+                            </div>
+                        </td>
+                    </tr>
 
                 <?php endif; ?>
 
-            </div>
+                </tbody>
+
+            </table>
 
         </div>
 
-
-        <!-- =================================================
-             ACTIVE ATTENDANCE SESSIONS
-             ================================================= -->
-
-        <?php if (count($activeSessions) > 0): ?>
-
-            <div class="section-card">
-
-                <div class="section-header">
-
-                    <div>
-
-                        <div class="section-title">
-                            <i class="fa-solid fa-satellite-dish"></i>
-                            Active Attendance Sessions
-                        </div>
-
-                        <div class="section-subtitle">
-                            Attendance sessions currently waiting for your scan
-                        </div>
-
-                    </div>
-
-                    <span class="live-indicator">
-                        <span class="live-dot"></span>
-                        Live
-                    </span>
-
-                </div>
+    </section>
 
 
-                <div>
+    <!-- =====================================================
+         TEACHER ATTENDANCE MONITORING
+         ===================================================== -->
 
-                    <?php foreach ($activeSessions as $session): ?>
+    <section class="panel">
+
+        <div class="panel-head">
+            <div>
+                <h2 class="panel-title">Teacher attendance monitoring</h2>
+                <p class="panel-sub">Attendance records for your assigned schedules</p>
+            </div>
+        </div>
+
+        <!-- FILTER BAR -->
+        <div class="filter-bar">
+
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input
+                    type="search"
+                    id="filterSearch"
+                    placeholder="Search teacher or subject..."
+                    aria-label="Search teacher or subject">
+            </div>
+
+            <div class="chip-group" id="statusChips" role="group" aria-label="Filter by status">
+                <button type="button" class="chip active" data-status="all">All<span class="n"><?= $statusTotal ?></span></button>
+                <button type="button" class="chip" data-status="present">Present<span class="n"><?= $statusCounts['Present'] ?></span></button>
+                <button type="button" class="chip" data-status="late">Late<span class="n"><?= $statusCounts['Late'] ?></span></button>
+                <button type="button" class="chip" data-status="absent">Absent<span class="n"><?= $statusCounts['Absent'] ?></span></button>
+            </div>
+
+            <input type="date" id="filterDate" class="date-filter" aria-label="Filter by date">
+
+            <button type="button" class="filter-reset" id="filterReset">Reset</button>
+
+        </div>
+
+        <div class="table-wrap">
+
+            <table class="data-table" style="min-width: 1180px;">
+
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Teacher</th>
+                        <th>Subject</th>
+                        <th>Section</th>
+                        <th>Room</th>
+                        <th>Schedule</th>
+                        <th>Time in</th>
+                        <th>Time out</th>
+                        <th>Status</th>
+                        <th>Remarks</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                <?php if (count($teacherAttendance) > 0): ?>
+
+                    <?php foreach ($teacherAttendance as $row): ?>
 
                         <?php
-                        /*
-                         * Enable Scan QR only when the session's
-                         * schedule day matches today's day.
-                         */
-                        $sessionDay = strtolower(trim($session['day']));
-                        $isCorrectDay = ($sessionDay === $currentDay);
+                        $rowStatus = $row['status'] === 'Leave Absent'
+                            ? 'absent'
+                            : strtolower((string)$row['status']);
+
+                        $rowSearch = mb_strtolower(
+                            $row['teacher_name'] . ' ' .
+                            $row['subject_code'] . ' ' .
+                            $row['subject_name']
+                        );
                         ?>
 
-                        <div class="active-session">
+                        <tr
+                            data-row
+                            data-status="<?= e($rowStatus) ?>"
+                            data-date="<?= e(date('Y-m-d', strtotime($row['attendance_date']))) ?>"
+                            data-search="<?= e($rowSearch) ?>">
 
-                            <div>
+                            <!-- DATE -->
+                            <td class="nowrap" style="font-weight:600;color:var(--ink);">
+                                <?= e(date('M d, Y', strtotime($row['attendance_date']))) ?>
+                            </td>
 
-                                <div class="subject-code">
-                                    <?= e($session['subject_code']) ?>
+                            <!-- TEACHER -->
+                            <td>
+                                <div class="teacher-name">
+                                    <i class="fa-solid fa-user-tie"></i><?= e($row['teacher_name']) ?>
                                 </div>
+                            </td>
 
-                                <div class="subject-name mb-1">
-                                    <?= e($session['subject_name']) ?>
-                                </div>
-
-                                <div class="teacher-name mb-1">
-                                    <i class="fa-solid fa-user-tie me-1"></i>
-                                    <?= e($session['teacher_name']) ?>
-                                </div>
-
-                                <div class="small text-muted">
-
-                                    <i class="fa-solid fa-clock me-1"></i>
-
-                                    <?= formatTime($session['start_time']) ?>
-                                    -
-                                    <?= formatTime($session['end_time']) ?>
-
-                                    <span class="mx-2">•</span>
-
-                                    <i class="fa-solid fa-door-open me-1"></i>
-
-                                    <?= e($session['room'] ?: 'No room') ?>
-
-                                </div>
-
-                            </div>
-
-
-                            <div>
-
-                                <?php if ($isCorrectDay): ?>
-
-                                    <a
-                                        href="scan_qr.php?schedule_id=<?= (int)$session['schedule_id'] ?>"
-                                        class="scan-btn">
-
-                                        <i class="fa-solid fa-qrcode"></i>
-
-                                        Scan QR
-
-                                    </a>
-
-                                <?php else: ?>
-
-                                    <span class="scan-btn disabled-scan">
-
-                                        <i class="fa-solid fa-ban"></i>
-
-                                        Not Today
-
-                                    </span>
-
+                            <!-- SUBJECT -->
+                            <td>
+                                <?php if (!empty($row['subject_code'])): ?>
+                                    <div class="subject-code"><?= e($row['subject_code']) ?></div>
                                 <?php endif; ?>
+                                <div class="subject-name"><?= e($row['subject_name']) ?></div>
+                            </td>
 
-                            </div>
+                            <!-- SECTION -->
+                            <td>
+                                <span class="tag">
+                                    <?= e($row['year_name']) ?> - <?= e($row['section_name']) ?>
+                                </span>
+                            </td>
 
-                        </div>
+                            <!-- ROOM -->
+                            <td>
+                                <span class="tag">
+                                    <i class="fa-solid fa-door-open"></i>
+                                    <?= e($row['room'] ?: 'No room') ?>
+                                </span>
+                            </td>
+
+                            <!-- SCHEDULE -->
+                            <td class="nowrap">
+                                <span class="tag tag-day"><?= e($row['day']) ?></span>
+                                <div class="muted-small mt-1">
+                                    <?= formatTime($row['start_time']) ?>
+                                    -
+                                    <?= formatTime($row['end_time']) ?>
+                                </div>
+                            </td>
+
+                            <!-- TIME IN -->
+                            <td class="nowrap"><?= formatTime($row['time_in']) ?></td>
+
+                            <!-- TIME OUT -->
+                            <td class="nowrap"><?= formatTime($row['time_out']) ?></td>
+
+                            <!-- STATUS -->
+                            <td>
+                                <?php
+
+                                $statusClass = 'status-total';
+
+                                $status = $row['status'];
+
+                                if ($status === 'Present') {
+                                    $statusClass = 'status-present';
+                                } elseif ($status === 'Late') {
+                                    $statusClass = 'status-late';
+                                } elseif (
+                                    $status === 'Absent' ||
+                                    $status === 'Leave Absent'
+                                ) {
+                                    $statusClass = 'status-absent';
+                                }
+
+                                ?>
+
+                                <span class="status-badge <?= $statusClass ?>">
+                                    <?= e($status) ?>
+                                </span>
+                            </td>
+
+                            <!-- REMARKS (read-only until Edit is clicked) -->
+                            <td>
+
+                                <form
+                                    method="POST"
+                                    id="remarks-form-<?= (int)$row['attendance_id'] ?>"
+                                    class="remarks-form">
+
+                                    <input
+                                        type="hidden"
+                                        name="attendance_id"
+                                        value="<?= (int)$row['attendance_id'] ?>">
+
+                                    <input
+                                        type="hidden"
+                                        name="update_remarks"
+                                        value="1">
+
+                                    <input
+                                        type="text"
+                                        name="remarks"
+                                        class="remarks-input"
+                                        value="<?= e($row['remarks'] ?? '') ?>"
+                                        data-original="<?= e($row['remarks'] ?? '') ?>"
+                                        placeholder="No remarks"
+                                        aria-label="Remarks"
+                                        readonly>
+
+                                </form>
+
+                            </td>
+
+                            <!-- EDIT / SAVE / CANCEL -->
+                            <td>
+
+                                <div class="row-actions">
+
+                                    <button
+                                        type="button"
+                                        class="btn-app btn-ghost"
+                                        data-role="viewing"
+                                        data-action="edit">
+
+                                        <i class="fa-solid fa-pen"></i>
+                                        Edit
+
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="btn-app btn-primary-app"
+                                        data-role="editing"
+                                        data-action="save">
+
+                                        <i class="fa-solid fa-floppy-disk"></i>
+                                        Save
+
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="btn-app btn-ghost"
+                                        data-role="editing"
+                                        data-action="cancel">
+
+                                        Cancel
+
+                                    </button>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
 
                     <?php endforeach; ?>
 
-                </div>
-
-            </div>
-
-        <?php endif; ?>
-
-
-        <!-- =================================================
-             ASSIGNED SUBJECTS
-             ================================================= -->
-
-        <div class="section-card">
-
-            <div class="section-header">
-
-                <div>
-
-                    <div class="section-title">
-                        <i class="fa-solid fa-calendar-days"></i>
-                        Assigned Subjects
-                    </div>
-
-                    <div class="section-subtitle">
-                        Your assigned class schedules
-                    </div>
-
-                </div>
-
-                <span class="badge rounded-pill text-bg-light">
-                    <?= $totalSubjects ?> Subjects
-                </span>
-
-            </div>
-
-            <div class="section-body">
-
-                <div class="table-container">
-
-                    <table class="table custom-table">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>Subject</th>
-
-                                <th>Teacher</th>
-
-                                <th>Section</th>
-
-                                <th>Room</th>
-
-                                <th>Day</th>
-
-                                <th>Schedule</th>
-
-                                <th>Action</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                        <?php if (count($subjects) > 0): ?>
-
-                            <?php foreach ($subjects as $row): ?>
-
-                                <?php
-                                /*
-                                 * Enable Scan only when the
-                                 * schedule is for today.
-                                 */
-                                $scheduleDay = strtolower(trim($row['day']));
-                                $isCorrectDay = ($scheduleDay === $currentDay);
-                                ?>
-
-                                <tr>
-
-                                    <td>
-
-                                        <?php if (!empty($row['subject_code'])): ?>
-
-                                            <div class="subject-code">
-                                                <?= e($row['subject_code']) ?>
-                                            </div>
-
-                                        <?php endif; ?>
-
-                                        <div class="subject-name">
-                                            <?= e($row['subject_name']) ?>
-                                        </div>
-
-                                    </td>
-
-
-                                    <td>
-
-                                        <div class="teacher-name">
-
-                                            <i class="fa-solid fa-user-tie me-1 text-muted"></i>
-
-                                            <?= e($row['teacher_name']) ?>
-
-                                        </div>
-
-                                    </td>
-
-
-                                    <td>
-
-                                        <span class="day-badge">
-
-                                            <?= e($row['year_name']) ?>
-
-                                            -
-
-                                            <?= e($row['section_name']) ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <td>
-
-                                        <span class="room-badge">
-
-                                            <i class="fa-solid fa-door-open"></i>
-
-                                            <?= e($row['room'] ?: 'No room') ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <td>
-
-                                        <span class="day-badge">
-
-                                            <?= e($row['day']) ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <td>
-
-                                        <span class="schedule-text">
-
-                                            <?= formatTime($row['start_time']) ?>
-
-                                            -
-
-                                            <?= formatTime($row['end_time']) ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <td>
-
-                                        <div class="action-buttons">
-
-                                            <?php if ($isCorrectDay): ?>
-
-                                                <a
-                                                    href="scan_qr.php?schedule_id=<?= (int)$row['schedule_id'] ?>"
-                                                    class="scan-btn">
-
-                                                    <i class="fa-solid fa-qrcode"></i>
-
-                                                    Scan
-
-                                                </a>
-
-                                            <?php else: ?>
-
-                                                <span class="scan-btn disabled-scan">
-
-                                                    <i class="fa-solid fa-ban"></i>
-
-                                                    Not Today
-
-                                                </span>
-
-                                            <?php endif; ?>
-
-
-                                            <?php
-                                            $attendanceStatus = trim((string)($row['attendance_status'] ?? ''));
-                                            $attendanceId = (int)($row['attendance_id'] ?? 0);
-
-                                            $showReportButton =
-                                                $attendanceId > 0
-                                                && in_array(
-                                                    $attendanceStatus,
-                                                    ['Absent', 'Leave Absent'],
-                                                    true
-                                                );
-                                            ?>
-
-                                            <?php if ($showReportButton): ?>
-
-                                                <button
-                                                    type="button"
-                                                    class="report-btn"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#absentReportModal"
-                                                    data-attendance-id="<?= $attendanceId ?>"
-                                                    data-teacher="<?= e($row['teacher_name']) ?>"
-                                                    data-subject="<?= e($row['subject_name']) ?>"
-                                                    data-status="<?= e($attendanceStatus) ?>"
-                                                    data-remarks="<?= e($row['attendance_remarks'] ?? '') ?>">
-
-                                                    <i class="fa-solid fa-file-pen"></i>
-
-                                                    Report
-
-                                                </button>
-
-                                            <?php endif; ?>
-
-                                        </div>
-
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        <?php else: ?>
-
-                            <tr>
-
-                                <td colspan="7">
-
-                                    <div class="empty-state">
-
-                                        <i class="fa-solid fa-book-open"></i>
-
-                                        <h6>No Assigned Subjects</h6>
-
-                                        <p>
-                                            You currently have no assigned schedules.
-                                        </p>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-
-                        <?php endif; ?>
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
+                    <!-- Shown by the filters when nothing matches -->
+                    <tr id="noResults" hidden>
+                        <td colspan="11">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-filter-circle-xmark"></i>
+                                <h6>No matching records</h6>
+                                <p>Try a different search or status, or reset the filters.</p>
+                            </div>
+                        </td>
+                    </tr>
+
+                <?php else: ?>
+
+                    <tr>
+                        <td colspan="11">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-chart-column"></i>
+                                <h6>No attendance data</h6>
+                                <p>No teacher attendance records are available yet.</p>
+                            </div>
+                        </td>
+                    </tr>
+
+                <?php endif; ?>
+
+                </tbody>
+
+            </table>
 
         </div>
 
-
-        <!-- =================================================
-             TEACHER ATTENDANCE MONITORING
-             ================================================= -->
-
-        <div class="section-card">
-
-            <div class="section-header">
-
-                <div>
-
-                    <div class="section-title">
-                        <i class="fa-solid fa-chart-column"></i>
-                        Teacher Attendance Monitoring
-                    </div>
-
-                    <div class="section-subtitle">
-                        Attendance records for your assigned schedules
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="section-body">
-
-                <div class="table-container">
-
-                    <table class="table custom-table">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>Date</th>
-
-                                <th>Teacher</th>
-
-                                <th>Subject</th>
-
-                                <th>Section</th>
-
-                                <th>Room</th>
-
-                                <th>Schedule</th>
-
-                                <th>Time In</th>
-
-                                <th>Time Out</th>
-
-                                <th>Status</th>
-
-                                <th>Remarks</th>
-
-                                <th>Action</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-                        <?php if (count($teacherAttendance) > 0): ?>
-
-                            <?php foreach ($teacherAttendance as $row): ?>
-
-                                <tr>
-
-                                    <!-- DATE -->
-
-                                    <td>
-
-                                        <div class="small fw-semibold">
-
-                                            <?= e(date(
-                                                'M d, Y',
-                                                strtotime($row['attendance_date'])
-                                            )) ?>
-
-                                        </div>
-
-                                    </td>
-
-
-                                    <!-- TEACHER -->
-
-                                    <td>
-
-                                        <div class="teacher-name">
-
-                                            <i class="fa-solid fa-user-tie me-1 text-muted"></i>
-
-                                            <?= e($row['teacher_name']) ?>
-
-                                        </div>
-
-                                    </td>
-
-
-                                    <!-- SUBJECT -->
-
-                                    <td>
-
-                                        <?php if (!empty($row['subject_code'])): ?>
-
-                                            <div class="subject-code">
-
-                                                <?= e($row['subject_code']) ?>
-
-                                            </div>
-
-                                        <?php endif; ?>
-
-                                        <div class="subject-name">
-
-                                            <?= e($row['subject_name']) ?>
-
-                                        </div>
-
-                                    </td>
-
-
-                                    <!-- SECTION -->
-
-                                    <td>
-
-                                        <span class="day-badge">
-
-                                            <?= e($row['year_name']) ?>
-
-                                            -
-
-                                            <?= e($row['section_name']) ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <!-- ROOM -->
-
-                                    <td>
-
-                                        <span class="room-badge">
-
-                                            <i class="fa-solid fa-door-open"></i>
-
-                                            <?= e($row['room'] ?: 'No room') ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <!-- SCHEDULE -->
-
-                                    <td>
-
-                                        <div>
-
-                                            <span class="day-badge">
-
-                                                <?= e($row['day']) ?>
-
-                                            </span>
-
-                                        </div>
-
-                                        <div class="small text-muted mt-1">
-
-                                            <?= formatTime($row['start_time']) ?>
-
-                                            -
-
-                                            <?= formatTime($row['end_time']) ?>
-
-                                        </div>
-
-                                    </td>
-
-
-                                    <!-- TIME IN -->
-
-                                    <td>
-
-                                        <span class="schedule-text">
-
-                                            <?= formatTime($row['time_in']) ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <!-- TIME OUT -->
-
-                                    <td>
-
-                                        <span class="schedule-text">
-
-                                            <?= formatTime($row['time_out']) ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <!-- STATUS -->
-
-                                    <td>
-
-                                        <?php
-
-                                        $statusClass = 'status-total';
-
-                                        $status = $row['status'];
-
-                                        if ($status === 'Present') {
-                                            $statusClass = 'status-present';
-                                        } elseif ($status === 'Late') {
-                                            $statusClass = 'status-late';
-                                        } elseif (
-                                            $status === 'Absent' ||
-                                            $status === 'Leave Absent'
-                                        ) {
-                                            $statusClass = 'status-absent';
-                                        }
-
-                                        ?>
-
-                                        <span class="status-badge <?= $statusClass ?>">
-
-                                            <?= e($status) ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <!-- REMARKS -->
-
-                                    <td>
-
-                                        <form
-                                            method="POST"
-                                            id="remarks-form-<?= (int)$row['attendance_id'] ?>"
-                                            class="remarks-form">
-
-                                            <input
-                                                type="hidden"
-                                                name="attendance_id"
-                                                value="<?= (int)$row['attendance_id'] ?>">
-
-                                            <input
-                                                type="text"
-                                                name="remarks"
-                                                class="form-control form-control-sm remarks-input"
-                                                value="<?= e($row['remarks'] ?? '') ?>"
-                                                placeholder="Add remarks...">
-
-                                        </form>
-
-                                    </td>
-
-
-                                    <!-- SAVE -->
-
-                                    <td>
-
-                                        <button
-                                            type="submit"
-                                            name="update_remarks"
-                                            class="save-remarks-btn"
-                                            form="remarks-form-<?= (int)$row['attendance_id'] ?>">
-
-                                            <i class="fa-solid fa-floppy-disk"></i>
-
-                                            Save
-
-                                        </button>
-
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        <?php else: ?>
-
-                            <tr>
-
-                                <td colspan="11">
-
-                                    <div class="empty-state">
-
-                                        <i class="fa-solid fa-chart-column"></i>
-
-                                        <h6>No Attendance Data</h6>
-
-                                        <p>
-                                            No teacher attendance records are available yet.
-                                        </p>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-
-                        <?php endif; ?>
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-    </div>
+    </section>
 
 </main>
 
@@ -2682,136 +2460,80 @@ $activeSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <div class="modal-dialog modal-dialog-centered">
 
-        <div class="modal-content border-0 shadow">
+        <div class="modal-content">
 
             <div class="modal-header">
 
                 <div>
-                    <h5 class="modal-title fw-bold" id="absentReportModalLabel">
-                        <i class="fa-solid fa-file-pen text-danger me-2"></i>
-                        Attendance Report
+                    <h5 class="modal-title" id="absentReportModalLabel">
+                        Attendance report
                     </h5>
-
-                    <small class="text-muted">
-                        Report the teacher's absence
-                    </small>
+                    <small class="text-muted">Report the teacher's absence</small>
                 </div>
 
                 <button
                     type="button"
                     class="btn-close"
-                    data-bs-dismiss="modal">
+                    data-bs-dismiss="modal"
+                    aria-label="Close">
                 </button>
 
             </div>
 
-            <form method="POST">
+            <form method="POST" id="absentReportForm">
 
                 <div class="modal-body">
 
-                    <input
-                        type="hidden"
-                        name="submit_absent_report"
-                        value="1">
+                    <input type="hidden" name="submit_absent_report" value="1">
 
                     <input
                         type="hidden"
                         name="report_attendance_id"
                         id="reportAttendanceId">
 
-
                     <div class="mb-3">
-
-                        <label class="form-label fw-semibold">
-                            Teacher
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="reportTeacher"
-                            readonly>
-
+                        <label class="form-label">Teacher</label>
+                        <input type="text" class="form-control" id="reportTeacher" readonly>
                     </div>
 
-
                     <div class="mb-3">
-
-                        <label class="form-label fw-semibold">
-                            Subject
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="reportSubject"
-                            readonly>
-
+                        <label class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="reportSubject" readonly>
                     </div>
 
-
                     <div class="mb-3">
-
-                        <label class="form-label fw-semibold">
-                            Attendance Status
-                        </label>
-
+                        <label class="form-label">Attendance status</label>
                         <select
                             name="report_status"
                             id="reportStatus"
                             class="form-select"
                             required>
-
-                            <option value="Absent">
-                                Absent
-                            </option>
-
-                            <option value="Leave Absent">
-                                Leave Absent
-                            </option>
-
+                            <option value="Absent">Absent</option>
+                            <option value="Leave Absent">Leave Absent</option>
                         </select>
-
                     </div>
 
-
-                    <div class="mb-3">
-
-                        <label class="form-label fw-semibold">
-                            Remarks
-                        </label>
-
+                    <div class="mb-0">
+                        <label class="form-label">Remarks</label>
                         <textarea
                             name="report_remarks"
                             id="reportRemarks"
                             class="form-control"
                             rows="4"
                             placeholder="Enter additional remarks..."></textarea>
-
                     </div>
 
                 </div>
 
-
                 <div class="modal-footer">
 
-                    <button
-                        type="button"
-                        class="btn btn-light"
-                        data-bs-dismiss="modal">
-
+                    <button type="button" class="btn-app btn-ghost" data-bs-dismiss="modal">
                         Cancel
-
                     </button>
 
-                    <button
-                        type="submit"
-                        class="btn btn-danger">
-
-                        <i class="fa-solid fa-floppy-disk me-1"></i>
-
-                        Save Report
-
+                    <button type="submit" class="btn-app btn-primary-app">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        Save report
                     </button>
 
                 </div>
@@ -2825,14 +2547,202 @@ $activeSessions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 
+<!-- =========================================================
+     CONFIRMATION MODAL
+     ========================================================= -->
+
+<div
+    class="modal fade"
+    id="confirmModal"
+    tabindex="-1"
+    aria-labelledby="confirmTitle"
+    aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+
+        <div class="modal-content">
+
+            <div class="modal-body text-center pb-2">
+
+                <div class="confirm-icon">
+                    <i class="fa-solid fa-circle-question"></i>
+                </div>
+
+                <h5 class="fw-bold mb-1" id="confirmTitle">Save changes?</h5>
+
+                <p class="text-muted mb-0" id="confirmMessage" style="font-size:13px;">
+                    Please confirm to continue.
+                </p>
+
+            </div>
+
+            <div class="modal-footer justify-content-center border-0 pt-3">
+
+                <button type="button" class="btn-app btn-ghost" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+
+                <button type="button" class="btn-app btn-primary-app" id="confirmYes">
+                    Yes, save
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- TOASTS -->
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const reportModal = document.getElementById('absentReportModal');
+    /* ---------------------------------------------------------
+       Toast
+       --------------------------------------------------------- */
 
-    if (!reportModal) {
-        return;
+    const toastStack = document.getElementById('toastStack');
+
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = 'app-toast' + (type === 'info' ? ' info' : '');
+        toast.innerHTML =
+            '<i class="fa-solid ' +
+            (type === 'info' ? 'fa-circle-info' : 'fa-circle-check') +
+            '"></i><span></span>';
+        toast.querySelector('span').textContent = message;
+        toastStack.appendChild(toast);
+
+        setTimeout(function () {
+            toast.style.transition = 'opacity .3s ease';
+            toast.style.opacity = '0';
+            setTimeout(function () { toast.remove(); }, 300);
+        }, 3500);
     }
+
+    // Show success message after the page reloads from a save.
+    try {
+        const pending = sessionStorage.getItem('beadleToast');
+        if (pending) {
+            sessionStorage.removeItem('beadleToast');
+            showToast(pending);
+        }
+    } catch (err) {}
+
+    function queueToast(message) {
+        try { sessionStorage.setItem('beadleToast', message); } catch (err) {}
+    }
+
+    /* ---------------------------------------------------------
+       Confirmation modal
+       --------------------------------------------------------- */
+
+    const confirmEl = document.getElementById('confirmModal');
+    const confirmModal = new bootstrap.Modal(confirmEl);
+    const confirmYes = document.getElementById('confirmYes');
+    let confirmCallback = null;
+
+    function askConfirm(options, onConfirm) {
+        document.getElementById('confirmTitle').textContent = options.title;
+        document.getElementById('confirmMessage').textContent = options.message;
+        confirmYes.textContent = options.confirmText || 'Yes, save';
+        confirmCallback = onConfirm;
+        confirmModal.show();
+    }
+
+    confirmYes.addEventListener('click', function () {
+        const callback = confirmCallback;
+        confirmCallback = null;
+        confirmModal.hide();
+        if (callback) { callback(); }
+    });
+
+    /* ---------------------------------------------------------
+       Remarks: Edit -> Save (with confirmation)
+       --------------------------------------------------------- */
+
+    function setEditing(row, editing) {
+        const input = row.querySelector('.remarks-input');
+        row.classList.toggle('is-editing', editing);
+        input.readOnly = !editing;
+        if (editing) {
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+    }
+
+    function saveRow(row) {
+        const input = row.querySelector('.remarks-input');
+        const form = row.querySelector('form.remarks-form');
+
+        if (input.value.trim() === input.dataset.original.trim()) {
+            setEditing(row, false);
+            showToast('No changes to save.', 'info');
+            return;
+        }
+
+        askConfirm(
+            {
+                title: 'Save remarks?',
+                message: 'Your changes to this attendance record will be saved.',
+                confirmText: 'Yes, save'
+            },
+            function () {
+                queueToast('Remarks saved successfully.');
+                form.submit();
+            }
+        );
+    }
+
+    document.querySelectorAll('tr[data-row]').forEach(function (row) {
+
+        const input = row.querySelector('.remarks-input');
+
+        row.querySelectorAll('[data-action]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const action = btn.getAttribute('data-action');
+
+                if (action === 'edit') {
+                    setEditing(row, true);
+                } else if (action === 'cancel') {
+                    input.value = input.dataset.original;
+                    setEditing(row, false);
+                } else if (action === 'save') {
+                    saveRow(row);
+                }
+            });
+        });
+
+        input.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (!input.readOnly) { saveRow(row); }
+            } else if (event.key === 'Escape' && !input.readOnly) {
+                input.value = input.dataset.original;
+                setEditing(row, false);
+            }
+        });
+
+        row.querySelector('form.remarks-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+        });
+    });
+
+    /* ---------------------------------------------------------
+       Absent report modal
+       --------------------------------------------------------- */
+
+    const reportModal = document.getElementById('absentReportModal');
+    const reportForm = document.getElementById('absentReportForm');
 
     reportModal.addEventListener('show.bs.modal', function (event) {
 
@@ -2842,35 +2752,189 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const attendanceId = button.getAttribute('data-attendance-id');
-        const teacher = button.getAttribute('data-teacher');
-        const subject = button.getAttribute('data-subject');
-        const status = button.getAttribute('data-status');
-        const remarks = button.getAttribute('data-remarks');
-
         document.getElementById('reportAttendanceId').value =
-            attendanceId || '';
+            button.getAttribute('data-attendance-id') || '';
 
         document.getElementById('reportTeacher').value =
-            teacher || '';
+            button.getAttribute('data-teacher') || '';
 
         document.getElementById('reportSubject').value =
-            subject || '';
+            button.getAttribute('data-subject') || '';
 
         document.getElementById('reportRemarks').value =
-            remarks || '';
+            button.getAttribute('data-remarks') || '';
 
         document.getElementById('reportStatus').value =
-            status === 'Leave Absent' ? 'Leave Absent' : 'Absent';
-
+            button.getAttribute('data-status') === 'Leave Absent'
+                ? 'Leave Absent'
+                : 'Absent';
     });
 
+    // Confirm before the report is saved.
+    reportForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const reportModalInstance = bootstrap.Modal.getInstance(reportModal);
+        reportModalInstance.hide();
+
+        reportModal.addEventListener('hidden.bs.modal', function openConfirm() {
+            reportModal.removeEventListener('hidden.bs.modal', openConfirm);
+
+            askConfirm(
+                {
+                    title: 'Save report?',
+                    message: 'The attendance status and remarks will be updated.',
+                    confirmText: 'Yes, save'
+                },
+                function () {
+                    queueToast('Report saved successfully.');
+                    reportForm.submit();
+                }
+            );
+        });
+    });
+
+    /* ---------------------------------------------------------
+       Today's timeline (Ongoing / Starts in ... / Ended)
+       Uses the server's Manila time as the starting point, so it
+       stays correct even if the device clock or timezone differs.
+       --------------------------------------------------------- */
+
+    const timeline = document.getElementById('timeline');
+
+    if (timeline) {
+
+        const serverNow = <?= (int)$nowSeconds ?>;
+        const loadedAt = Date.now();
+        const cards = Array.from(timeline.querySelectorAll('.tl-card'));
+
+        function currentSeconds() {
+            return serverNow + Math.floor((Date.now() - loadedAt) / 1000);
+        }
+
+        function formatGap(totalMinutes) {
+            if (totalMinutes < 60) {
+                return totalMinutes + ' min';
+            }
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            return h + 'h' + (m ? ' ' + m + 'm' : '');
+        }
+
+        function updateTimeline() {
+
+            const now = currentSeconds();
+            let nextFound = false;
+
+            cards.forEach(function (card) {
+
+                const start = parseInt(card.dataset.start, 10);
+                const end = parseInt(card.dataset.end, 10);
+                const label = card.querySelector('[data-state]');
+
+                card.classList.remove('is-ongoing', 'is-ended', 'is-next');
+
+                if (now >= end) {
+                    card.classList.add('is-ended');
+                    label.textContent = 'Ended';
+                } else if (now >= start) {
+                    card.classList.add('is-ongoing');
+                    label.textContent = 'Ongoing · ' + formatGap(Math.ceil((end - now) / 60)) + ' left';
+                } else {
+                    if (!nextFound) {
+                        card.classList.add('is-next');
+                        nextFound = true;
+                    }
+                    label.textContent = 'Starts in ' + formatGap(Math.ceil((start - now) / 60));
+                }
+            });
+        }
+
+        updateTimeline();
+        setInterval(updateTimeline, 30000);
+
+        // Bring the ongoing (or next) class into view.
+        const focusCard = timeline.querySelector('.is-ongoing') || timeline.querySelector('.is-next');
+
+        if (focusCard) {
+            timeline.scrollLeft = Math.max(0, focusCard.offsetLeft - 24);
+        }
+    }
+
+    /* ---------------------------------------------------------
+       Attendance table filters: search + status chips + date
+       --------------------------------------------------------- */
+
+    const filterSearch = document.getElementById('filterSearch');
+    const filterDate = document.getElementById('filterDate');
+    const filterReset = document.getElementById('filterReset');
+    const statusChips = document.getElementById('statusChips');
+    const noResults = document.getElementById('noResults');
+    const dataRows = Array.from(document.querySelectorAll('tr[data-row]'));
+
+    let activeStatus = 'all';
+
+    function applyFilters() {
+
+        const query = filterSearch.value.trim().toLowerCase();
+        const date = filterDate.value;
+        let visible = 0;
+
+        dataRows.forEach(function (row) {
+
+            const matchesSearch = query === '' || row.dataset.search.indexOf(query) !== -1;
+            const matchesStatus = activeStatus === 'all' || row.dataset.status === activeStatus;
+            const matchesDate = date === '' || row.dataset.date === date;
+
+            const show = matchesSearch && matchesStatus && matchesDate;
+
+            row.hidden = !show;
+
+            if (show) { visible++; }
+        });
+
+        if (noResults) {
+            noResults.hidden = visible !== 0;
+        }
+    }
+
+    if (filterSearch && statusChips) {
+
+        filterSearch.addEventListener('input', applyFilters);
+        filterDate.addEventListener('change', applyFilters);
+
+        statusChips.addEventListener('click', function (event) {
+
+            const chip = event.target.closest('.chip');
+
+            if (!chip) {
+                return;
+            }
+
+            statusChips.querySelectorAll('.chip').forEach(function (c) {
+                c.classList.remove('active');
+            });
+
+            chip.classList.add('active');
+            activeStatus = chip.dataset.status;
+            applyFilters();
+        });
+
+        filterReset.addEventListener('click', function () {
+
+            filterSearch.value = '';
+            filterDate.value = '';
+            activeStatus = 'all';
+
+            statusChips.querySelectorAll('.chip').forEach(function (c) {
+                c.classList.toggle('active', c.dataset.status === 'all');
+            });
+
+            applyFilters();
+        });
+    }
+
 });
-</script>
-
-
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
 </script>
 
 </body>
