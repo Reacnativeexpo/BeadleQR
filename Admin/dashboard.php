@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 require "../db.php";
@@ -132,52 +131,37 @@ function attendancePercentage($value, $total)
 
     return min(100, round(($value / $total) * 100, 1));
 }
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Admin Dashboard | BeadleQR</title>
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
     <style>
         :root {
             --primary: #f97316;
             --primary-dark: #ea580c;
             --primary-light: #fb923c;
-
             --sidebar-bg: #1e293b;
             --sidebar-hover: #334155;
-
             --card-bg: #ffffff;
             --body-bg: #f1f5f9;
-
             --text-dark: #1e293b;
             --text-muted: #64748b;
-
             --success: #10b981;
             --success-light: #d1fae5;
-
             --danger: #ef4444;
             --danger-light: #fee2e2;
-
             --warning: #f59e0b;
             --warning-light: #fef3c7;
-
             --info: #3b82f6;
             --info-light: #dbeafe;
-
             --purple: #8b5cf6;
             --purple-light: #ede9fe;
-
             --radius: 18px;
             --shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
         }
@@ -200,9 +184,6 @@ function attendancePercentage($value, $total)
             overflow-x: hidden;
         }
 
-        /* =====================================================
-           MAIN CONTENT
-        ===================================================== */
         .main-content {
             margin-left: 260px;
             min-height: 100vh;
@@ -210,9 +191,6 @@ function attendancePercentage($value, $total)
             transition: margin-left 0.3s ease;
         }
 
-        /* =====================================================
-           TOPBAR
-        ===================================================== */
         .topbar {
             min-height: 70px;
             background: #fff;
@@ -334,9 +312,6 @@ function attendancePercentage($value, $total)
             color: var(--text-muted);
         }
 
-        /* =====================================================
-           CONTENT AREA
-        ===================================================== */
         .content-area {
             width: 100%;
             max-width: 1800px;
@@ -344,16 +319,8 @@ function attendancePercentage($value, $total)
             padding: 30px 35px;
         }
 
-        /* =====================================================
-           WELCOME BANNER
-        ===================================================== */
         .welcome-banner {
-            background: linear-gradient(
-                135deg,
-                var(--primary) 0%,
-                var(--primary-dark) 50%,
-                #c2410c 100%
-            );
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, #c2410c 100%);
             border-radius: 20px;
             padding: 35px 40px;
             color: white;
@@ -424,9 +391,6 @@ function attendancePercentage($value, $total)
             pointer-events: none;
         }
 
-        /* =====================================================
-           STATISTICS CARDS
-        ===================================================== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -483,25 +447,10 @@ function attendancePercentage($value, $total)
             font-size: 22px;
         }
 
-        .stat-card.teachers .stat-icon {
-            background: #fff7ed;
-            color: var(--primary);
-        }
-
-        .stat-card.students .stat-icon {
-            background: #eff6ff;
-            color: var(--info);
-        }
-
-        .stat-card.schedules .stat-icon {
-            background: #ecfdf5;
-            color: var(--success);
-        }
-
-        .stat-card.subjects .stat-icon {
-            background: #f5f3ff;
-            color: var(--purple);
-        }
+        .stat-card.teachers .stat-icon { background: #fff7ed; color: var(--primary); }
+        .stat-card.students .stat-icon { background: #eff6ff; color: var(--info); }
+        .stat-card.schedules .stat-icon { background: #ecfdf5; color: var(--success); }
+        .stat-card.subjects .stat-icon { background: #f5f3ff; color: var(--purple); }
 
         .stat-trend {
             display: inline-flex;
@@ -533,9 +482,6 @@ function attendancePercentage($value, $total)
             font-weight: 500;
         }
 
-        /* =====================================================
-           CHART AND STATUS LAYOUT
-        ===================================================== */
         .section-grid {
             display: grid;
             grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
@@ -603,9 +549,6 @@ function attendancePercentage($value, $total)
             height: 320px;
         }
 
-        /* =====================================================
-           TODAY'S STATUS PANEL
-        ===================================================== */
         .status-panel-title {
             font-size: 17px;
             font-weight: 700;
@@ -651,30 +594,11 @@ function attendancePercentage($value, $total)
             font-size: 17px;
         }
 
-        .status-icon.present {
-            background: var(--success-light);
-            color: var(--success);
-        }
-
-        .status-icon.absent {
-            background: var(--danger-light);
-            color: var(--danger);
-        }
-
-        .status-icon.late {
-            background: var(--warning-light);
-            color: var(--warning);
-        }
-
-        .status-icon.excused {
-            background: var(--info-light);
-            color: var(--info);
-        }
-
-        .status-icon.pending {
-            background: var(--purple-light);
-            color: var(--purple);
-        }
+        .status-icon.present { background: var(--success-light); color: var(--success); }
+        .status-icon.absent { background: var(--danger-light); color: var(--danger); }
+        .status-icon.late { background: var(--warning-light); color: var(--warning); }
+        .status-icon.excused { background: var(--info-light); color: var(--info); }
+        .status-icon.pending { background: var(--purple-light); color: var(--purple); }
 
         .status-info {
             min-width: 0;
@@ -733,9 +657,6 @@ function attendancePercentage($value, $total)
             line-height: 1.7;
         }
 
-        /* =====================================================
-           QUICK ACTIONS
-        ===================================================== */
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -804,25 +725,10 @@ function attendancePercentage($value, $total)
             transition: transform 0.3s ease;
         }
 
-        .action-card:nth-child(1) .action-icon {
-            background: #fff7ed;
-            color: var(--primary);
-        }
-
-        .action-card:nth-child(2) .action-icon {
-            background: #eff6ff;
-            color: var(--info);
-        }
-
-        .action-card:nth-child(3) .action-icon {
-            background: #ecfdf5;
-            color: var(--success);
-        }
-
-        .action-card:nth-child(4) .action-icon {
-            background: #f5f3ff;
-            color: var(--purple);
-        }
+        .action-card:nth-child(1) .action-icon { background: #fff7ed; color: var(--primary); }
+        .action-card:nth-child(2) .action-icon { background: #eff6ff; color: var(--info); }
+        .action-card:nth-child(3) .action-icon { background: #ecfdf5; color: var(--success); }
+        .action-card:nth-child(4) .action-icon { background: #f5f3ff; color: var(--purple); }
 
         .action-card:hover .action-icon {
             transform: scale(1.08);
@@ -840,387 +746,101 @@ function attendancePercentage($value, $total)
             line-height: 1.7;
         }
 
-        /* =====================================================
-           RESPONSIVE: TABLETS
-        ===================================================== */
         @media (max-width: 1200px) {
-            .content-area {
-                padding: 25px;
-            }
-
-            .topbar {
-                padding: 12px 25px;
-            }
-
-            .stats-grid,
-            .actions-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .section-grid {
-                grid-template-columns: minmax(0, 1fr);
-            }
-
+            .content-area { padding: 25px; }
+            .topbar { padding: 12px 25px; }
+            .stats-grid, .actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .section-grid { grid-template-columns: minmax(0, 1fr); }
             .status-panel {
                 display: grid;
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 column-gap: 25px;
                 align-content: start;
             }
-
-            .status-panel-title,
-            .status-note {
-                grid-column: 1 / -1;
-            }
-
-            .status-panel-title {
-                margin-bottom: 10px;
-            }
+            .status-panel-title, .status-note { grid-column: 1 / -1; }
+            .status-panel-title { margin-bottom: 10px; }
         }
 
-        /* =====================================================
-           RESPONSIVE: MOBILE
-        ===================================================== */
         @media (max-width: 768px) {
-            body {
-                overflow-x: hidden;
-            }
-
-            .main-content {
-                margin-left: 0;
-                width: 100%;
-                min-width: 0;
-            }
-
-            .topbar {
-                position: relative;
-                min-height: auto;
-                padding: 16px;
-                gap: 12px;
-                align-items: flex-start;
-            }
-
-            .topbar-left {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-                flex: 1;
-            }
-
-            .page-title {
-                font-size: 20px;
-            }
-
-            .breadcrumb {
-                font-size: 11px;
-                gap: 6px;
-            }
-
-            .topbar-right {
-                gap: 9px;
-            }
-
-            .notification-btn {
-                width: 38px;
-                height: 38px;
-            }
-
-            .user-profile {
-                padding: 0;
-                background: transparent;
-                gap: 7px;
-            }
-
-            .user-avatar {
-                width: 36px;
-                height: 36px;
-            }
-
-            .user-info {
-                display: none;
-            }
-
-            .content-area {
-                padding: 18px 15px 25px;
-            }
-
-            .welcome-banner {
-                padding: 25px 22px;
-                margin-bottom: 20px;
-                border-radius: 17px;
-            }
-
-            .welcome-greeting {
-                font-size: 12px;
-            }
-
-            .welcome-name {
-                font-size: 23px;
-            }
-
-            .welcome-text {
-                font-size: 12px;
-                line-height: 1.8;
-                max-width: 100%;
-            }
-
-            .welcome-icon {
-                right: 12px;
-                font-size: 65px;
-                opacity: 0.08;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 12px;
-                margin-bottom: 20px;
-            }
-
-            .stat-card {
-                padding: 17px 14px;
-                border-radius: 14px;
-            }
-
-            .stat-header {
-                margin-bottom: 12px;
-                gap: 6px;
-            }
-
-            .stat-icon {
-                width: 42px;
-                height: 42px;
-                font-size: 18px;
-                border-radius: 12px;
-            }
-
-            .stat-trend {
-                font-size: 9px;
-                padding: 4px 7px;
-            }
-
-            .stat-value {
-                font-size: 25px;
-            }
-
-            .stat-label {
-                font-size: 11px;
-                line-height: 1.6;
-            }
-
-            .section-grid {
-                gap: 16px;
-                margin-bottom: 25px;
-            }
-
-            .chart-card,
-            .status-panel {
-                padding: 18px 15px;
-                border-radius: 16px;
-            }
-
-            .chart-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 13px;
-                margin-bottom: 15px;
-            }
-
-            .chart-title {
-                font-size: 14px;
-                line-height: 1.6;
-            }
-
-            .chart-legend {
-                gap: 9px 12px;
-                width: 100%;
-            }
-
-            .legend-item {
-                font-size: 10px;
-            }
-
-            .chart-container {
-                height: 260px;
-            }
-
-            .status-panel {
-                display: block;
-            }
-
-            .status-panel-title {
-                font-size: 16px;
-                margin-bottom: 12px;
-            }
-
-            .status-item {
-                padding: 12px 0;
-            }
-
-            .status-icon {
-                width: 38px;
-                height: 38px;
-                font-size: 15px;
-                border-radius: 11px;
-            }
-
-            .status-info h4 {
-                font-size: 12px;
-            }
-
-            .status-info p {
-                font-size: 10px;
-            }
-
-            .status-count {
-                font-size: 19px;
-            }
-
-            .status-note {
-                font-size: 10px;
-            }
-
-            .section-header {
-                margin-bottom: 15px;
-            }
-
-            .section-title {
-                font-size: 17px;
-                line-height: 1.5;
-            }
-
-            .actions-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: 12px;
-            }
-
-            .action-card {
-                padding: 20px 12px;
-                border-radius: 14px;
-                gap: 10px;
-            }
-
-            .action-icon {
-                width: 48px;
-                height: 48px;
-                font-size: 21px;
-                border-radius: 14px;
-            }
-
-            .action-title {
-                font-size: 12px;
-            }
-
-            .action-desc {
-                font-size: 10px;
-                line-height: 1.6;
-            }
+            .main-content { margin-left: 0; width: 100%; min-width: 0; }
+            .topbar { position: relative; min-height: auto; padding: 16px; gap: 12px; align-items: flex-start; }
+            .topbar-left { flex-direction: column; align-items: flex-start; gap: 5px; flex: 1; }
+            .page-title { font-size: 20px; }
+            .breadcrumb { font-size: 11px; gap: 6px; }
+            .topbar-right { gap: 9px; }
+            .notification-btn { width: 38px; height: 38px; }
+            .user-profile { padding: 0; background: transparent; gap: 7px; }
+            .user-avatar { width: 36px; height: 36px; }
+            .user-info { display: none; }
+            .content-area { padding: 18px 15px 25px; }
+            .welcome-banner { padding: 25px 22px; margin-bottom: 20px; border-radius: 17px; }
+            .welcome-greeting { font-size: 12px; }
+            .welcome-name { font-size: 23px; }
+            .welcome-text { font-size: 12px; line-height: 1.8; max-width: 100%; }
+            .welcome-icon { right: 12px; font-size: 65px; opacity: 0.08; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+            .stat-card { padding: 17px 14px; border-radius: 14px; }
+            .stat-header { margin-bottom: 12px; gap: 6px; }
+            .stat-icon { width: 42px; height: 42px; font-size: 18px; border-radius: 12px; }
+            .stat-trend { font-size: 9px; padding: 4px 7px; }
+            .stat-value { font-size: 25px; }
+            .stat-label { font-size: 11px; line-height: 1.6; }
+            .section-grid { gap: 16px; margin-bottom: 25px; }
+            .chart-card, .status-panel { padding: 18px 15px; border-radius: 16px; }
+            .chart-header { flex-direction: column; align-items: flex-start; gap: 13px; margin-bottom: 15px; }
+            .chart-title { font-size: 14px; line-height: 1.6; }
+            .chart-legend { gap: 9px 12px; width: 100%; }
+            .legend-item { font-size: 10px; }
+            .chart-container { height: 260px; }
+            .status-panel { display: block; }
+            .status-panel-title { font-size: 16px; margin-bottom: 12px; }
+            .status-item { padding: 12px 0; }
+            .status-icon { width: 38px; height: 38px; font-size: 15px; border-radius: 11px; }
+            .status-info h4 { font-size: 12px; }
+            .status-info p { font-size: 10px; }
+            .status-count { font-size: 19px; }
+            .status-note { font-size: 10px; }
+            .section-header { margin-bottom: 15px; }
+            .section-title { font-size: 17px; line-height: 1.5; }
+            .actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+            .action-card { padding: 20px 12px; border-radius: 14px; gap: 10px; }
+            .action-icon { width: 48px; height: 48px; font-size: 21px; border-radius: 14px; }
+            .action-title { font-size: 12px; }
+            .action-desc { font-size: 10px; line-height: 1.6; }
         }
 
-        /* =====================================================
-           RESPONSIVE: SMALL PHONES
-        ===================================================== */
         @media (max-width: 380px) {
-            .topbar {
-                padding: 13px 11px;
-                gap: 8px;
-            }
-
-            .page-title {
-                font-size: 18px;
-            }
-
-            .breadcrumb {
-                font-size: 10px;
-                gap: 5px;
-            }
-
-            .topbar-right {
-                gap: 7px;
-            }
-
-            .notification-btn {
-                width: 34px;
-                height: 34px;
-                font-size: 14px;
-            }
-
-            .user-avatar {
-                width: 32px;
-                height: 32px;
-                font-size: 12px;
-            }
-
-            .content-area {
-                padding: 14px 10px 20px;
-            }
-
-            .welcome-banner {
-                padding: 21px 17px;
-            }
-
-            .welcome-name {
-                font-size: 21px;
-            }
-
-            .stats-grid,
-            .actions-grid {
-                gap: 10px;
-            }
-
-            .stat-card {
-                padding: 14px 11px;
-            }
-
-            .stat-icon {
-                width: 37px;
-                height: 37px;
-                font-size: 16px;
-            }
-
-            .stat-value {
-                font-size: 23px;
-            }
-
-            .stat-trend {
-                font-size: 8px;
-                padding: 4px 6px;
-            }
-
-            .chart-card,
-            .status-panel {
-                padding: 15px 12px;
-            }
-
-            .chart-container {
-                height: 230px;
-            }
-
-            .chart-legend {
-                gap: 8px 10px;
-            }
-
-            .section-title {
-                font-size: 15px;
-            }
-
-            .action-card {
-                padding: 17px 9px;
-            }
+            .topbar { padding: 13px 11px; gap: 8px; }
+            .page-title { font-size: 18px; }
+            .breadcrumb { font-size: 10px; gap: 5px; }
+            .topbar-right { gap: 7px; }
+            .notification-btn { width: 34px; height: 34px; font-size: 14px; }
+            .user-avatar { width: 32px; height: 32px; font-size: 12px; }
+            .content-area { padding: 14px 10px 20px; }
+            .welcome-banner { padding: 21px 17px; }
+            .welcome-name { font-size: 21px; }
+            .stats-grid, .actions-grid { gap: 10px; }
+            .stat-card { padding: 14px 11px; }
+            .stat-icon { width: 37px; height: 37px; font-size: 16px; }
+            .stat-value { font-size: 23px; }
+            .stat-trend { font-size: 8px; padding: 4px 6px; }
+            .chart-card, .status-panel { padding: 15px 12px; }
+            .chart-container { height: 230px; }
+            .chart-legend { gap: 8px 10px; }
+            .section-title { font-size: 15px; }
+            .action-card { padding: 17px 9px; }
         }
     </style>
 </head>
-
 <body>
 
 <?php include 'sidebar.php'; ?>
 
 <div class="main-content">
-
     <!-- TOPBAR -->
     <header class="topbar">
         <div class="topbar-left">
             <div class="page-title">Dashboard</div>
-
             <div class="breadcrumb">
                 <i class="fa-solid fa-house"></i>
                 <span>Home</span>
@@ -1230,12 +850,7 @@ function attendancePercentage($value, $total)
         </div>
 
         <div class="topbar-right">
-            <button
-                type="button"
-                class="notification-btn"
-                aria-label="Notifications"
-                title="Notifications"
-            >
+            <button type="button" class="notification-btn" aria-label="Notifications" title="Notifications">
                 <i class="fa-solid fa-bell"></i>
                 <span class="notif-badge">3</span>
             </button>
@@ -1244,7 +859,6 @@ function attendancePercentage($value, $total)
                 <div class="user-avatar">
                     <?= htmlspecialchars(strtoupper(substr($admin_name, 0, 1))); ?>
                 </div>
-
                 <div class="user-info">
                     <div class="user-name">
                         <?= htmlspecialchars($admin_name); ?>
@@ -1255,547 +869,211 @@ function attendancePercentage($value, $total)
         </div>
     </header>
 
-    <main class="content-area">
-
+    <!-- CONTENT AREA -->
+    <div class="content-area">
         <!-- WELCOME BANNER -->
-        <section class="welcome-banner">
+        <div class="welcome-banner">
             <div class="welcome-content">
-                <div class="welcome-greeting">Welcome back,</div>
-
-                <div class="welcome-name">
-                    <?= htmlspecialchars($admin_name); ?>!
-                </div>
-
-                <div class="welcome-text">
-                    Here's what's happening with your school's attendance today.
-                    Monitor teacher presence, track schedules, and manage everything
-                    from one place.
-                </div>
+                <div class="welcome-greeting">Welcome back, Admin</div>
+                <div class="welcome-name"><?= htmlspecialchars($admin_name); ?></div>
+                <div class="welcome-text">Here is the real-time overview of BeadleQR attendance logs, system metrics, and teacher records for today.</div>
             </div>
-
-            <i class="fa-solid fa-shapes welcome-icon"></i>
-        </section>
+            <i class="fa-solid fa-chart-line welcome-icon"></i>
+        </div>
 
         <!-- STATISTICS CARDS -->
-        <section class="stats-grid">
-
+        <div class="stats-grid">
             <div class="stat-card teachers">
                 <div class="stat-header">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-user-tie"></i>
-                    </div>
-
-                    <span class="stat-trend up">
-                        <i class="fa-solid fa-users"></i>
-                        Teachers
-                    </span>
+                    <div class="stat-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                    <span class="stat-trend up"><i class="fa-solid fa-arrow-up"></i> Active</span>
                 </div>
-
-                <div class="stat-value">
-                    <?= number_format($teacherCount); ?>
-                </div>
-
+                <div class="stat-value"><?= number_format($teacherCount); ?></div>
                 <div class="stat-label">Total Teachers</div>
             </div>
 
             <div class="stat-card students">
                 <div class="stat-header">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-users"></i>
-                    </div>
-
-                    <span class="stat-trend up">
-                        <i class="fa-solid fa-graduation-cap"></i>
-                        Students
-                    </span>
+                    <div class="stat-icon"><i class="fa-solid fa-user-graduate"></i></div>
+                    <span class="stat-trend up"><i class="fa-solid fa-arrow-up"></i> Enrolled</span>
                 </div>
-
-                <div class="stat-value">
-                    <?= number_format($studentCount); ?>
-                </div>
-
+                <div class="stat-value"><?= number_format($studentCount); ?></div>
                 <div class="stat-label">Total Students</div>
             </div>
 
             <div class="stat-card schedules">
                 <div class="stat-header">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-calendar-days"></i>
-                    </div>
-
-                    <span class="stat-trend up">
-                        <i class="fa-solid fa-clock"></i>
-                        Schedules
-                    </span>
+                    <div class="stat-icon"><i class="fa-solid fa-calendar-days"></i></div>
+                    <span class="stat-trend up"><i class="fa-solid fa-check"></i> Current</span>
                 </div>
-
-                <div class="stat-value">
-                    <?= number_format($scheduleCount); ?>
-                </div>
-
+                <div class="stat-value"><?= number_format($scheduleCount); ?></div>
                 <div class="stat-label">Total Schedules</div>
             </div>
 
             <div class="stat-card subjects">
                 <div class="stat-header">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-book-open"></i>
-                    </div>
-
-                    <span class="stat-trend up">
-                        <i class="fa-solid fa-book"></i>
-                        Subjects
-                    </span>
+                    <div class="stat-icon"><i class="fa-solid fa-book-open"></i></div>
+                    <span class="stat-trend up"><i class="fa-solid fa-book"></i> Catalog</span>
                 </div>
-
-                <div class="stat-value">
-                    <?= number_format($subjectCount); ?>
-                </div>
-
+                <div class="stat-value"><?= number_format($subjectCount); ?></div>
                 <div class="stat-label">Total Subjects</div>
             </div>
+        </div>
 
-        </section>
-
-        <!-- ATTENDANCE CHART AND TODAY'S STATUS -->
-        <section class="section-grid">
-
+        <!-- CHART AND STATUS LAYOUT -->
+        <div class="section-grid">
             <!-- ATTENDANCE TREND CHART -->
             <div class="chart-card">
-
                 <div class="chart-header">
                     <div class="chart-title">
-                        <i class="fa-solid fa-chart-area"></i>
-                        Attendance Trend (Last 7 Days)
+                        <i class="fa-solid fa-chart-column"></i> Teacher Attendance Trend (Last 7 Days)
                     </div>
-
                     <div class="chart-legend">
-                        <div class="legend-item">
-                            <span class="legend-dot" style="background:#10b981;"></span>
-                            Present
-                        </div>
-
-                        <div class="legend-item">
-                            <span class="legend-dot" style="background:#ef4444;"></span>
-                            Absent
-                        </div>
-
-                        <div class="legend-item">
-                            <span class="legend-dot" style="background:#f59e0b;"></span>
-                            Late
-                        </div>
-
-                        <div class="legend-item">
-                            <span class="legend-dot" style="background:#3b82f6;"></span>
-                            Excused
-                        </div>
-
-                        <div class="legend-item">
-                            <span class="legend-dot" style="background:#8b5cf6;"></span>
-                            Pending
-                        </div>
+                        <div class="legend-item"><span class="legend-dot" style="background: var(--success);"></span>Present</div>
+                        <div class="legend-item"><span class="legend-dot" style="background: var(--danger);"></span>Absent</div>
+                        <div class="legend-item"><span class="legend-dot" style="background: var(--warning);"></span>Late</div>
+                        <div class="legend-item"><span class="legend-dot" style="background: var(--info);"></span>Excused</div>
+                        <div class="legend-item"><span class="legend-dot" style="background: var(--purple);"></span>Pending</div>
                     </div>
                 </div>
-
                 <div class="chart-container">
-                    <canvas id="attendanceChart"></canvas>
+                    <canvas id="attendanceTrendChart"></canvas>
                 </div>
-
             </div>
 
-            <!-- TODAY'S STATUS -->
+            <!-- TODAY'S STATUS PANEL -->
             <div class="status-panel">
-
                 <div class="status-panel-title">
-                    <i class="fa-solid fa-calendar-day"></i>
-                    Today's Status
+                    <i class="fa-solid fa-pie-chart"></i> Today's Breakdown
                 </div>
 
-                <!-- PRESENT -->
+                <?php foreach ($statusData as $status => $count): 
+                    $percent = attendancePercentage($count, $totalToday);
+                    $cls = strtolower($status);
+                ?>
                 <div class="status-item">
                     <div class="status-left">
-                        <div class="status-icon present">
-                            <i class="fa-solid fa-check"></i>
+                        <div class="status-icon <?= $cls; ?>">
+                            <?php if ($status === 'Present'): ?><i class="fa-solid fa-check"></i>
+                            <?php elseif ($status === 'Absent'): ?><i class="fa-solid fa-xmark"></i>
+                            <?php elseif ($status === 'Late'): ?><i class="fa-solid fa-clock"></i>
+                            <?php elseif ($status === 'Excused'): ?><i class="fa-solid fa-note-sticky"></i>
+                            <?php else: ?><i class="fa-solid fa-spinner"></i>
+                            <?php endif; ?>
                         </div>
-
                         <div class="status-info">
-                            <h4>Present</h4>
-                            <p>Recorded as present</p>
+                            <h4><?= $status; ?></h4>
+                            <div class="status-bar">
+                                <div class="status-bar-fill <?= $cls; ?>" style="width: <?= $percent; ?>%;"></div>
+                            </div>
+                            <p><?= $percent; ?>% of total logs</p>
                         </div>
                     </div>
-
-                    <div class="status-count present">
-                        <?= $statusData['Present']; ?>
-                    </div>
+                    <div class="status-count <?= $cls; ?>"><?= number_format($count); ?></div>
                 </div>
-
-                <div class="status-bar">
-                    <div
-                        class="status-bar-fill present"
-                        style="width: <?= attendancePercentage($statusData['Present'], $totalToday); ?>%;"
-                    ></div>
-                </div>
-
-                <!-- ABSENT -->
-                <div class="status-item">
-                    <div class="status-left">
-                        <div class="status-icon absent">
-                            <i class="fa-solid fa-xmark"></i>
-                        </div>
-
-                        <div class="status-info">
-                            <h4>Absent</h4>
-                            <p>Recorded as absent</p>
-                        </div>
-                    </div>
-
-                    <div class="status-count absent">
-                        <?= $statusData['Absent']; ?>
-                    </div>
-                </div>
-
-                <div class="status-bar">
-                    <div
-                        class="status-bar-fill absent"
-                        style="width: <?= attendancePercentage($statusData['Absent'], $totalToday); ?>%;"
-                    ></div>
-                </div>
-
-                <!-- LATE -->
-                <div class="status-item">
-                    <div class="status-left">
-                        <div class="status-icon late">
-                            <i class="fa-solid fa-clock"></i>
-                        </div>
-
-                        <div class="status-info">
-                            <h4>Late</h4>
-                            <p>Recorded as late</p>
-                        </div>
-                    </div>
-
-                    <div class="status-count late">
-                        <?= $statusData['Late']; ?>
-                    </div>
-                </div>
-
-                <div class="status-bar">
-                    <div
-                        class="status-bar-fill late"
-                        style="width: <?= attendancePercentage($statusData['Late'], $totalToday); ?>%;"
-                    ></div>
-                </div>
-
-                <!-- EXCUSED -->
-                <div class="status-item">
-                    <div class="status-left">
-                        <div class="status-icon excused">
-                            <i class="fa-solid fa-file-circle-check"></i>
-                        </div>
-
-                        <div class="status-info">
-                            <h4>Excused</h4>
-                            <p>Approved excuse</p>
-                        </div>
-                    </div>
-
-                    <div class="status-count excused">
-                        <?= $statusData['Excused']; ?>
-                    </div>
-                </div>
-
-                <div class="status-bar">
-                    <div
-                        class="status-bar-fill excused"
-                        style="width: <?= attendancePercentage($statusData['Excused'], $totalToday); ?>%;"
-                    ></div>
-                </div>
-
-                <!-- PENDING -->
-                <div class="status-item">
-                    <div class="status-left">
-                        <div class="status-icon pending">
-                            <i class="fa-solid fa-hourglass-half"></i>
-                        </div>
-
-                        <div class="status-info">
-                            <h4>Pending</h4>
-                            <p>Awaiting confirmation</p>
-                        </div>
-                    </div>
-
-                    <div class="status-count pending">
-                        <?= $statusData['Pending']; ?>
-                    </div>
-                </div>
-
-                <div class="status-bar">
-                    <div
-                        class="status-bar-fill pending"
-                        style="width: <?= attendancePercentage($statusData['Pending'], $totalToday); ?>%;"
-                    ></div>
-                </div>
+                <?php endforeach; ?>
 
                 <div class="status-note">
-                    <i class="fa-solid fa-circle-info"></i>
-                    Counts reflect attendance records saved for today.
-                </div>
-
-            </div>
-        </section>
-
-        <!-- QUICK ACTIONS -->
-        <section class="quick-actions-section">
-
-            <div class="section-header">
-                <div class="section-title">
-                    <i class="fa-solid fa-bolt"></i>
-                    Quick Actions
+                    <i class="fa-solid fa-circle-info"></i> Active Sessions Today: <strong><?= number_format($activeSessionCount); ?></strong>
                 </div>
             </div>
+        </div>
 
-            <div class="actions-grid">
-
-                <a href="add_teacher.php" class="action-card">
-                    <div class="action-icon">
-                        <i class="fa-solid fa-user-plus"></i>
-                    </div>
-
-                    <div class="action-title">Add Teacher</div>
-
-                    <div class="action-desc">
-                        Register new teachers and manage their accounts.
-                    </div>
-                </a>
-
-                <a href="attendance.php" class="action-card">
-                    <div class="action-icon">
-                        <i class="fa-solid fa-clipboard-list"></i>
-                    </div>
-
-                    <div class="action-title">View Attendance</div>
-
-                    <div class="action-desc">
-                        Check daily attendance records and reports.
-                    </div>
-                </a>
-
-                <a href="create_subject.php" class="action-card">
-                    <div class="action-icon">
-                        <i class="fa-solid fa-book"></i>
-                    </div>
-
-                    <div class="action-title">Create Subject</div>
-
-                    <div class="action-desc">
-                        Add new subjects to the curriculum.
-                    </div>
-                </a>
-
-                <a href="reports.php" class="action-card">
-                    <div class="action-icon">
-                        <i class="fa-solid fa-chart-bar"></i>
-                    </div>
-
-                    <div class="action-title">Generate Reports</div>
-
-                    <div class="action-desc">
-                        View and generate attendance reports.
-                    </div>
-                </a>
-
+        <!-- QUICK ACTIONS SECTION -->
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fa-solid fa-bolt"></i> Quick Management
             </div>
-        </section>
+        </div>
 
-    </main>
+        <div class="actions-grid">
+            <a href="teachers.php" class="action-card">
+                <div class="action-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                <div class="action-title">Manage Teachers</div>
+                <div class="action-desc">Add, edit, or view records and credentials for teachers.</div>
+            </a>
+
+            <a href="students.php" class="action-card">
+                <div class="action-icon"><i class="fa-solid fa-user-graduate"></i></div>
+                <div class="action-title">Manage Students</div>
+                <div class="action-desc">Review student profiles, enrollments, and sections.</div>
+            </a>
+
+            <a href="schedules.php" class="action-card">
+                <div class="action-icon"><i class="fa-solid fa-calendar-alt"></i></div>
+                <div class="action-title">Class Schedules</div>
+                <div class="action-desc">Set up and modify class timetables and periods.</div>
+            </a>
+
+            <a href="reports.php" class="action-card">
+                <div class="action-icon"><i class="fa-solid fa-file-excel"></i></div>
+                <div class="action-title">Attendance Reports</div>
+                <div class="action-desc">Export daily, weekly, or monthly attendance logs.</div>
+            </a>
+        </div>
+    </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const canvas = document.getElementById('attendanceChart');
-
-    if (!canvas || typeof Chart === 'undefined') {
-        return;
-    }
-
-    const ctx = canvas.getContext('2d');
-
-    function createGradient(color) {
-        const gradient = ctx.createLinearGradient(0, 0, 0, 320);
-
-        gradient.addColorStop(0, color.replace('ALPHA', '0.25'));
-        gradient.addColorStop(1, color.replace('ALPHA', '0'));
-
-        return gradient;
-    }
-
-    const colors = {
-        present: '#10b981',
-        absent: '#ef4444',
-        late: '#f59e0b',
-        excused: '#3b82f6',
-        pending: '#8b5cf6'
-    };
-
-    const gradients = {
-        present: createGradient('rgba(16, 185, 129, ALPHA)'),
-        absent: createGradient('rgba(239, 68, 68, ALPHA)'),
-        late: createGradient('rgba(245, 158, 11, ALPHA)'),
-        excused: createGradient('rgba(59, 130, 246, ALPHA)'),
-        pending: createGradient('rgba(139, 92, 246, ALPHA)')
-    };
-
-    new Chart(ctx, {
-        type: 'line',
-
+    // Chart.js initialization for the 7-day trend
+    const ctx = document.getElementById('attendanceTrendChart').getContext('2d');
+    const attendanceTrendChart = new Chart(ctx, {
+        type: 'bar',
         data: {
             labels: <?= json_encode($chartLabels); ?>,
-
             datasets: [
                 {
                     label: 'Present',
                     data: <?= json_encode($chartPresent); ?>,
-                    borderColor: colors.present,
-                    backgroundColor: gradients.present,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: colors.present,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    backgroundColor: '#10b981',
+                    borderRadius: 4
                 },
                 {
                     label: 'Absent',
                     data: <?= json_encode($chartAbsent); ?>,
-                    borderColor: colors.absent,
-                    backgroundColor: gradients.absent,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: colors.absent,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    backgroundColor: '#ef4444',
+                    borderRadius: 4
                 },
                 {
                     label: 'Late',
                     data: <?= json_encode($chartLate); ?>,
-                    borderColor: colors.late,
-                    backgroundColor: gradients.late,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: colors.late,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 4
                 },
                 {
                     label: 'Excused',
                     data: <?= json_encode($chartExcused); ?>,
-                    borderColor: colors.excused,
-                    backgroundColor: gradients.excused,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: colors.excused,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 4
                 },
                 {
                     label: 'Pending',
                     data: <?= json_encode($chartPending); ?>,
-                    borderColor: colors.pending,
-                    backgroundColor: gradients.pending,
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.4,
-                    borderDash: [5, 5],
-                    pointBackgroundColor: colors.pending,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
+                    backgroundColor: '#8b5cf6',
+                    borderRadius: 4
                 }
             ]
         },
-
         options: {
             responsive: true,
             maintainAspectRatio: false,
-
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-
             plugins: {
                 legend: {
                     display: false
-                },
-
-                tooltip: {
-                    backgroundColor: '#1e293b',
-                    titleFont: {
-                        family: 'Poppins',
-                        size: 12
-                    },
-                    bodyFont: {
-                        family: 'Poppins',
-                        size: 11
-                    },
-                    padding: 12,
-                    cornerRadius: 10,
-                    displayColors: true,
-                    boxPadding: 4
                 }
             },
-
             scales: {
                 x: {
-                    grid: {
-                        display: false
-                    },
-
-                    ticks: {
-                        font: {
-                            family: 'Poppins',
-                            size: window.innerWidth <= 480 ? 9 : 11
-                        },
-                        color: '#94a3b8',
-                        maxRotation: 0,
-                        autoSkip: true
-                    }
+                    grid: { display: false }
                 },
-
                 y: {
                     beginAtZero: true,
-
-                    ticks: {
-                        precision: 0,
-                        font: {
-                            family: 'Poppins',
-                            size: 10
-                        },
-                        color: '#94a3b8',
-                        padding: 8
-                    },
-
-                    grid: {
-                        color: '#f1f5f9',
-                        drawBorder: false
-                    }
+                    grid: { color: '#f1f5f9' },
+                    ticks: { precision: 0 }
                 }
             }
         }
     });
-});
 </script>
 
 </body>
