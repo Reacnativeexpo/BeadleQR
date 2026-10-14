@@ -1,5 +1,18 @@
 
 <?php
+
+if (headers_sent($sentFile, $sentLine)) {
+    error_log(
+        "BEADLEQR OUTPUT DEBUG: Output started at "
+        . $sentFile . ":" . $sentLine
+    );
+}
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+
 /*
 |--------------------------------------------------------------------------
 | BEADLEQR LOGIN
