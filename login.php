@@ -69,11 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
                     switch ($user['role']) {
                         case 'admin':
-                            header('Location: admin/dashboard.php');
+                            header('Location: Admin/dashboard.php');
                             exit();
 
                         case 'teacher':
-                            header('Location: teacher/dashboard.php');
+                            header('Location: Teacher/dashboard.php');
                             exit();
 
                         case 'student':
