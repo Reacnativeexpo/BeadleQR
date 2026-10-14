@@ -1,71 +1,88 @@
+
 <?php
 
-session_start();
+// Start the session before any output.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-require "db.php";
+// Load the database connection using an absolute path.
+require_once __DIR__ . '/db.php';
 
-$error = "";
+$error = '';
 
-if (isset($_POST['login'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
     if ($username === '' || $password === '') {
 
-        $error = "Please enter your username and password.";
+        $error = 'Please enter your username and password.';
 
     } else {
 
-        $stmt = $conn->prepare("
-            SELECT id, fullname, username, password, role
-            FROM users
-            WHERE username = :username
-            LIMIT 1
-        ");
+        try {
 
-        $stmt->execute([
-            'username' => $username
-        ]);
+            $stmt = $conn->prepare("
+                SELECT id, fullname, username, password, role
+                FROM users
+                WHERE username = :username
+                LIMIT 1
+            ");
 
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt->execute([
+                ':username' => $username
+            ]);
 
-        if ($user && password_verify($password, $user['password'])) {
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            session_regenerate_id(true);
+            if ($user && password_verify($password, $user['password'])) {
 
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['fullname'] = $user['fullname'];
-            $_SESSION['role'] = $user['role'];
+                // Regenerate the session ID before redirecting.
+                session_regenerate_id(true);
 
-            switch ($user['role']) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['fullname'] = $user['fullname'];
+                $_SESSION['role'] = $user['role'];
 
-                case 'admin':
-                    header("Location: admin/dashboard.php");
-                    break;
+                // Redirect according to the user's role.
+                switch ($user['role']) {
 
-                case 'teacher':
-                    header("Location: teacher/dashboard.php");
-                    break;
+                    case 'admin':
+                        header('Location: admin/dashboard.php');
+                        exit();
 
-                case 'student':
-                    header("Location: Student/student_dashboard.php");
-                    break;
+                    case 'teacher':
+                        header('Location: teacher/dashboard.php');
+                        exit();
 
-                default:
-                    session_unset();
-                    session_destroy();
-                    $error = "Invalid user role.";
-                    break;
+                    case 'student':
+                        header('Location: Student/student_dashboard.php');
+                        exit();
+
+                    default:
+                        session_unset();
+                        session_destroy();
+
+                        // Start a fresh session for the error message.
+                        session_start();
+
+                        $error = 'Invalid user role.';
+                        break;
+                }
+
+            } else {
+
+                $error = 'Invalid username or password.';
             }
 
-            if (empty($error)) {
-                exit();
-            }
+        } catch (PDOException $e) {
 
-        } else {
+            // Log the technical error without exposing database details.
+            error_log('Login database error: ' . $e->getMessage());
 
-            $error = "Invalid username or password.";
+            $error = 'Unable to process your login right now. Please try again.';
         }
     }
 }
