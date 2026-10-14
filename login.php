@@ -1,25 +1,12 @@
-
+```php
 <?php
-
-if (headers_sent($sentFile, $sentLine)) {
-    error_log(
-        "BEADLEQR OUTPUT DEBUG: Output started at "
-        . $sentFile . ":" . $sentLine
-    );
-}
-
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
-
 
 /*
 |--------------------------------------------------------------------------
 | BEADLEQR LOGIN
 |--------------------------------------------------------------------------
-| IMPORTANT:
 | Save this file as UTF-8 without BOM.
-| Do not place spaces or blank lines before this opening PHP tag.
+| Nothing should appear before this opening PHP tag.
 |--------------------------------------------------------------------------
 */
 
@@ -65,89 +52,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
 
             if ($user && password_verify($password, $user['password'])) {
 
-                /*
-                |--------------------------------------------------------------------------
-                | CHECK WHETHER OUTPUT HAS ALREADY BEEN SENT
-                |--------------------------------------------------------------------------
-                */
-
                 if (headers_sent($sentFile, $sentLine)) {
-
                     error_log(
-                        'BeadleQR login error: Headers already sent from '
+                        "BeadleQR: Output started at "
                         . $sentFile . ':' . $sentLine
                     );
 
                     $error = 'A server response error occurred. Please try again.';
 
+                } elseif (!session_regenerate_id(true)) {
+
+                    $error = 'Unable to start your login session. Please try again.';
+
                 } else {
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | REGENERATE SESSION ID
-                    |--------------------------------------------------------------------------
-                    */
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['fullname'] = $user['fullname'];
+                    $_SESSION['role'] = $user['role'];
 
-                    if (session_status() !== PHP_SESSION_ACTIVE) {
-                        session_start();
-                    }
+                    switch ($user['role']) {
 
-                    if (headers_sent($sentFile, $sentLine)) {
+                        case 'admin':
+                            header('Location: admin/dashboard.php');
+                            exit();
 
-                        error_log(
-                            'BeadleQR login error before session regeneration: '
-                            . $sentFile . ':' . $sentLine
-                        );
+                        case 'teacher':
+                            header('Location: teacher/dashboard.php');
+                            exit();
 
-                        $error = 'A server response error occurred. Please try again.';
+                        case 'student':
+                            header('Location: Student/student_dashboard.php');
+                            exit();
 
-                    } elseif (!session_regenerate_id(true)) {
-
-                        error_log(
-                            'BeadleQR login error: session_regenerate_id() failed.'
-                        );
-
-                        $error = 'Unable to start your login session. Please try again.';
-
-                    } else {
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | SET SESSION VARIABLES
-                        |--------------------------------------------------------------------------
-                        */
-
-                        $_SESSION['user_id'] = $user['id'];
-                        $_SESSION['fullname'] = $user['fullname'];
-                        $_SESSION['role'] = $user['role'];
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | ROLE-BASED REDIRECTS
-                        |--------------------------------------------------------------------------
-                        */
-
-                        switch ($user['role']) {
-
-                            case 'admin':
-                                header('Location: admin/dashboard.php');
-                                exit();
-
-                            case 'teacher':
-                                header('Location: teacher/dashboard.php');
-                                exit();
-
-                            case 'student':
-                                header('Location: Student/student_dashboard.php');
-                                exit();
-
-                            default:
-                                session_unset();
-                                session_destroy();
-
-                                $error = 'Invalid user role.';
-                                break;
-                        }
+                        default:
+                            $_SESSION = [];
+                            session_destroy();
+                            $error = 'Invalid user role.';
+                            break;
                     }
                 }
 
@@ -156,25 +97,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                 $error = 'Invalid username or password.';
             }
 
-        } catch (PDOException $e) {
-
-            error_log(
-                'BeadleQR login database error: ' . $e->getMessage()
-            );
-
-            $error = 'Unable to process your login right now. Please try again.';
-
         } catch (Throwable $e) {
 
-            error_log(
-                'BeadleQR login error: ' . $e->getMessage()
-            );
+            error_log('BeadleQR login error: ' . $e->getMessage());
 
             $error = 'Unable to process your login right now. Please try again.';
         }
     }
 }
 ?>
+```
 
 
 <!DOCTYPE html>
