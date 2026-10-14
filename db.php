@@ -1,4 +1,3 @@
-
 <?php
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -25,7 +24,6 @@ if (
 }
 
 try {
-
     $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require";
 
     $conn = new PDO($dsn, $user, $password, [
@@ -35,10 +33,8 @@ try {
     ]);
 
 } catch (PDOException $e) {
-
     error_log('BeadleQR database connection failed: ' . $e->getMessage());
 
     http_response_code(500);
     exit('Unable to connect to the database. Please try again later.');
 }
-
