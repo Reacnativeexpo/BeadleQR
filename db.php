@@ -1,7 +1,19 @@
 
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| LOAD COMPOSER AUTOLOAD
+|--------------------------------------------------------------------------
+*/
+
 require_once __DIR__ . '/vendor/autoload.php';
+
+/*
+|--------------------------------------------------------------------------
+| LOAD ENVIRONMENT VARIABLES
+|--------------------------------------------------------------------------
+*/
 
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
@@ -16,16 +28,13 @@ $host     = $_ENV['DB_HOST'] ?? 'aws-0-ap-southeast-1.pooler.supabase.com';
 $port     = $_ENV['DB_PORT'] ?? '5432';
 $dbname   = $_ENV['DB_NAME'] ?? 'postgres';
 $user     = $_ENV['DB_USER'] ?? 'postgres.rpikbrrkqmpfpfyhuvzk';
+$password = $_ENV['DB_PASSWORD'] ?? '';
 
 /*
 |--------------------------------------------------------------------------
-| IMPORTANT
+| VALIDATE DATABASE CONFIGURATION
 |--------------------------------------------------------------------------
-| Set DB_PASSWORD in Render Environment Variables.
-| Do not hardcode your database password here.
 */
-
-$password = $_ENV['DB_PASSWORD'] ?? '';
 
 if (
     trim($host) === '' ||
@@ -35,6 +44,7 @@ if (
     $password === ''
 ) {
     error_log('Database configuration is incomplete.');
+
     http_response_code(500);
     exit('Database configuration error.');
 }
@@ -49,11 +59,16 @@ try {
 
     $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require";
 
-    $conn = new PDO($dsn, $user, $password, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-    ]);
+    $conn = new PDO(
+        $dsn,
+        $user,
+        $password,
+        [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ]
+    );
 
 } catch (PDOException $e) {
 
@@ -62,3 +77,5 @@ try {
     http_response_code(500);
     exit('Unable to connect to the database. Please try again later.');
 }
+
+// Do not add a closing PHP tag.
