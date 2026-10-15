@@ -836,53 +836,38 @@ function attendancePercentage($value, $total)
 
 <?php include 'sidebar.php'; ?>
 
-<!-- OVERLAY -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<!-- MAIN CONTENT -->
 <div class="main-content">
-
     <!-- TOPBAR -->
-    <div class="topbar">
-
+    <header class="topbar">
         <div class="topbar-left">
+            <div class="page-title">Dashboard</div>
+            <div class="breadcrumb">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+                <i class="fa-solid fa-chevron-right" style="font-size: 9px;"></i>
+                <span>Dashboard</span>
+            </div>
+        </div>
 
-            <button type="button" class="mobile-menu" id="mobileMenu" aria-label="Open sidebar">
-                <i class="fa-solid fa-bars"></i>
+        <div class="topbar-right">
+            <button type="button" class="notification-btn" aria-label="Notifications" title="Notifications">
+                <i class="fa-solid fa-bell"></i>
+                <span class="notif-badge">3</span>
             </button>
 
-            <div>
-                <div class="page-title">
-                    Dashboard
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <?= htmlspecialchars(strtoupper(substr($admin_name, 0, 1))); ?>
                 </div>
-
-                <div class="page-subtitle">
-                    Overview of your BeadleQR attendance system
+                <div class="user-info">
+                    <div class="user-name">
+                        <?= htmlspecialchars($admin_name); ?>
+                    </div>
+                    <div class="user-role">Administrator</div>
                 </div>
             </div>
-
         </div>
-
-        <div class="admin-profile">
-
-            <div class="admin-avatar">
-                <i class="fa-solid fa-user-shield"></i>
-            </div>
-
-            <div class="admin-info">
-                <strong>
-                    <?= htmlspecialchars($admin_name); ?>
-                </strong>
-                <span>Administrator</span>
-            </div>
-
-        </div>
-
-    </div>
-
-    <!-- KEEP YOUR EXISTING DASHBOARD CONTENT BELOW -->
-
-</div>
+    </header>
 
     <!-- CONTENT AREA -->
     <div class="content-area">
