@@ -830,6 +830,94 @@ function attendancePercentage($value, $total)
             .section-title { font-size: 15px; }
             .action-card { padding: 17px 9px; }
         }
+        
+@media (max-width: 768px) {
+    .topbar {
+        min-height: 72px;
+        padding: 12px 15px;
+        gap: 10px;
+    }
+
+    .topbar-left {
+        flex: 1;
+        min-width: 0;
+        gap: 10px;
+    }
+
+    .header-title-wrapper {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .page-title {
+        font-size: 17px;
+        line-height: 1.3;
+    }
+
+    .breadcrumb {
+        font-size: 10px;
+        gap: 5px;
+        white-space: nowrap;
+    }
+
+    .mobile-menu-btn {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+    }
+
+    .topbar-right {
+        flex-shrink: 0;
+        gap: 8px;
+    }
+
+    .notification-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+    }
+
+    .user-info {
+        display: none;
+    }
+
+    .content-area {
+        padding: 14px;
+    }
+
+    .welcome-banner {
+        border-radius: 18px;
+    }
+}
+
+@media (max-width: 380px) {
+    .topbar {
+        padding: 10px;
+        gap: 6px;
+    }
+
+    .topbar-left {
+        gap: 7px;
+    }
+
+    .page-title {
+        font-size: 15px;
+    }
+
+    .breadcrumb {
+        font-size: 9px;
+        gap: 4px;
+    }
+
+    .topbar-right {
+        gap: 5px;
+    }
+}
+
     </style>
 </head>
 <body>
