@@ -403,7 +403,7 @@ $beadle_id = (int) $_SESSION['user_id'];
 
 
     <a
-        href="../../dashboard.php"
+        href="../../student_dashboard.php"
         class="back-btn"
     >
 
