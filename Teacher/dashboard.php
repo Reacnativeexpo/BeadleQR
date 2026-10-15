@@ -1324,7 +1324,7 @@ function safeChartJson($value): string
                                         </a>
 
                                         <a
-                                            href="view_attendance.php?schedule_id=<?= (int)$row['id'] ?>"
+                                            href="Teacher/view_attendance.php?schedule_id=<?= (int)$row['id'] ?>"
                                             class="btn-action btn-attendance">
                                             <i class="fa-solid fa-clipboard-check"></i> Attendance
                                         </a>
