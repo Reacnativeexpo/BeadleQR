@@ -2440,18 +2440,7 @@ foreach ($schedules as $schedule) {
 
                             <td class="actions">
 
-                                <a
-                                    href="?refresh_qr=<?= e($tc['id']) ?>"
-                                    class="btn btn-warning btn-sm"
-                                    onclick="return confirm('Generate a new QR session for this class?')"
-                                >
-
-                                    <?= !empty($tc['qr_token'])
-                                        ? 'Refresh QR'
-                                        : 'Create QR'
-                                    ?>
-
-                                </a>
+                               
 
 
                                 <a
