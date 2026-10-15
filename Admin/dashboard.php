@@ -809,115 +809,7 @@ function attendancePercentage($value, $total)
             .action-desc { font-size: 10px; line-height: 1.6; }
         }
 
-        @media (max-width: 380px) {
-            .topbar { padding: 13px 11px; gap: 8px; }
-            .page-title { font-size: 18px; }
-            .breadcrumb { font-size: 10px; gap: 5px; }
-            .topbar-right { gap: 7px; }
-            .notification-btn { width: 34px; height: 34px; font-size: 14px; }
-            .user-avatar { width: 32px; height: 32px; font-size: 12px; }
-            .content-area { padding: 14px 10px 20px; }
-            .welcome-banner { padding: 21px 17px; }
-            .welcome-name { font-size: 21px; }
-            .stats-grid, .actions-grid { gap: 10px; }
-            .stat-card { padding: 14px 11px; }
-            .stat-icon { width: 37px; height: 37px; font-size: 16px; }
-            .stat-value { font-size: 23px; }
-            .stat-trend { font-size: 8px; padding: 4px 6px; }
-            .chart-card, .status-panel { padding: 15px 12px; }
-            .chart-container { height: 230px; }
-            .chart-legend { gap: 8px 10px; }
-            .section-title { font-size: 15px; }
-            .action-card { padding: 17px 9px; }
-        }
-        
-@media (max-width: 768px) {
-    .topbar {
-        min-height: 72px;
-        padding: 12px 15px;
-        gap: 10px;
-    }
-
-    .topbar-left {
-        flex: 1;
-        min-width: 0;
-        gap: 10px;
-    }
-
-    .header-title-wrapper {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .page-title {
-        font-size: 17px;
-        line-height: 1.3;
-    }
-
-    .breadcrumb {
-        font-size: 10px;
-        gap: 5px;
-        white-space: nowrap;
-    }
-
-    .mobile-menu-btn {
-        width: 40px;
-        height: 40px;
-        flex-shrink: 0;
-    }
-
-    .topbar-right {
-        flex-shrink: 0;
-        gap: 8px;
-    }
-
-    .notification-btn {
-        width: 38px;
-        height: 38px;
-    }
-
-    .user-avatar {
-        width: 36px;
-        height: 36px;
-    }
-
-    .user-info {
-        display: none;
-    }
-
-    .content-area {
-        padding: 14px;
-    }
-
-    .welcome-banner {
-        border-radius: 18px;
-    }
-}
-
-@media (max-width: 380px) {
-    .topbar {
-        padding: 10px;
-        gap: 6px;
-    }
-
-    .topbar-left {
-        gap: 7px;
-    }
-
-    .page-title {
-        font-size: 15px;
-    }
-
-    .breadcrumb {
-        font-size: 9px;
-        gap: 4px;
-    }
-
-    .topbar-right {
-        gap: 5px;
-    }
-}
-
+      
     </style>
 </head>
 <body>
@@ -925,92 +817,37 @@ function attendancePercentage($value, $total)
 <?php include 'sidebar.php'; ?>
 
 <div class="main-content">
-
-    <!-- TOP HEADER -->
+    <!-- TOPBAR -->
     <header class="topbar">
-
         <div class="topbar-left">
-
-            <!-- MOBILE MENU BUTTON -->
-            <button
-                type="button"
-                class="mobile-menu-btn"
-                id="mobileMenuBtn"
-                aria-label="Open navigation menu"
-                aria-controls="sidebar"
-                aria-expanded="false"
-            >
-                <i class="fa-solid fa-bars" aria-hidden="true"></i>
-            </button>
-
-            <!-- PAGE TITLE -->
-            <div class="header-title-wrapper">
-
-                <div class="page-title">
-                    Dashboard
-                </div>
-
-                <div class="breadcrumb">
-                    <i class="fa-solid fa-house"></i>
-                    <span>Home</span>
-
-                    <i
-                        class="fa-solid fa-chevron-right"
-                        style="font-size: 9px;"
-                    ></i>
-
-                    <span>Dashboard</span>
-                </div>
-
+            <div class="page-title">Dashboard</div>
+            <div class="breadcrumb">
+                <i class="fa-solid fa-house"></i>
+                <span>Home</span>
+                <i class="fa-solid fa-chevron-right" style="font-size: 9px;"></i>
+                <span>Dashboard</span>
             </div>
-
         </div>
 
-        <!-- HEADER RIGHT -->
         <div class="topbar-right">
-
-            <button
-                type="button"
-                class="notification-btn"
-                aria-label="Notifications"
-                title="Notifications"
-            >
+            <button type="button" class="notification-btn" aria-label="Notifications" title="Notifications">
                 <i class="fa-solid fa-bell"></i>
                 <span class="notif-badge">3</span>
             </button>
 
             <div class="user-profile">
-
                 <div class="user-avatar">
-                    <?= htmlspecialchars(
-                        strtoupper(substr($admin_name ?? 'A', 0, 1)),
-                        ENT_QUOTES,
-                        'UTF-8'
-                    ); ?>
+                    <?= htmlspecialchars(strtoupper(substr($admin_name, 0, 1))); ?>
                 </div>
-
                 <div class="user-info">
-
                     <div class="user-name">
-                        <?= htmlspecialchars(
-                            $admin_name ?? 'Administrator',
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ); ?>
+                        <?= htmlspecialchars($admin_name); ?>
                     </div>
-
-                    <div class="user-role">
-                        Administrator
-                    </div>
-
+                    <div class="user-role">Administrator</div>
                 </div>
-
             </div>
-
         </div>
-
     </header>
-
     <!-- CONTENT AREA -->
     <div class="content-area">
         <!-- WELCOME BANNER -->
