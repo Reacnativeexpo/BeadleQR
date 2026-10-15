@@ -52,166 +52,252 @@ $logoPath = '../images/beadle.png';
 ?>
 
 <style>
-/* =========================================================
-   BEADLEQR ADMIN SIDEBAR
-========================================================= */
+/* =====================================================
+   GLOBAL SIDEBAR VARIABLES AND RESET
+===================================================== */
+
+:root {
+    --sidebar-width: 260px;
+    --sidebar-bg: #172033;
+    --sidebar-orange: #f97316;
+    --sidebar-text: #cbd5e1;
+}
+
+.sidebar,
+.sidebar *,
+.sidebar-overlay,
+.sidebar-overlay *,
+.mobile-menu-btn {
+    box-sizing: border-box;
+}
+
+/* =====================================================
+   MOBILE MENU BUTTON
+===================================================== */
+
+.mobile-menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    width: 44px;
+    height: 44px;
+    padding: 0;
+
+    border: none;
+    border-radius: 10px;
+
+    background: var(--sidebar-orange);
+    color: #ffffff;
+
+    font-size: 20px;
+    cursor: pointer;
+
+    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.2);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-menu-btn:hover {
+    background: #ea580c;
+}
+
+.mobile-menu-btn:focus-visible {
+    outline: 3px solid #fdba74;
+    outline-offset: 3px;
+}
+
+/* =====================================================
+   SIDEBAR
+===================================================== */
 
 .sidebar {
     position: fixed;
-    left: 0;
     top: 0;
-    width: 260px;
+    left: 0;
+
+    width: var(--sidebar-width);
     height: 100vh;
     height: 100dvh;
+    max-height: 100dvh;
+
+    display: flex;
+    flex-direction: column;
+
     background: linear-gradient(180deg, #111827, #172033);
     color: #e5e7eb;
+
     z-index: 1000;
+
+    transform: translateX(0);
     transition: transform 0.3s ease;
-    overflow-y: auto;
+
     overflow-x: hidden;
-    box-sizing: border-box;
+    overflow-y: auto;
+
+    overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: #374151 transparent;
 }
 
-.sidebar *,
-.sidebar *::before,
-.sidebar *::after {
-    box-sizing: border-box;
-}
-
-/* =========================================================
+/* =====================================================
    LOGO HEADER
-========================================================= */
+===================================================== */
 
 .sidebar-header {
+    flex-shrink: 0;
     width: 100%;
+
     padding: 20px 14px;
+
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     text-align: center;
 }
 
 .sidebar-logo {
     width: 100%;
+
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 .sidebar-logo img {
+    display: block;
+
     width: 100%;
     max-width: 232px;
     height: 82px;
+
     padding: 8px;
     object-fit: contain;
-    display: block;
+
     background: #ffffff;
     border-radius: 8px;
 }
 
 .sidebar-subtitle {
+    margin-top: 12px;
+
     color: rgba(255, 255, 255, 0.5);
     font-size: 11px;
-    margin-top: 12px;
     letter-spacing: 1px;
     text-transform: uppercase;
 }
 
-/* =========================================================
-   SIDEBAR MENU
-========================================================= */
+/* =====================================================
+   SIDEBAR NAVIGATION
+===================================================== */
 
 .sidebar-menu {
-    padding: 20px 15px 150px;
+    flex: 1 0 auto;
+    width: 100%;
+
+    padding: 20px 15px 16px;
 }
 
 .sidebar .menu-label {
     display: block;
+
     color: #9ca3af;
     font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
+
     padding: 0 12px;
     margin-bottom: 10px;
-    font-weight: 700;
 }
-
-/* MENU LINKS */
 
 .sidebar-menu a {
     display: flex;
     align-items: center;
     gap: 12px;
+
     width: 100%;
     min-height: 46px;
     padding: 12px 15px;
-    color: #cbd5e1;
-    text-decoration: none;
-    border-radius: 8px;
     margin-bottom: 5px;
+
+    color: var(--sidebar-text);
+    text-decoration: none;
+
+    border-radius: 8px;
+
     font-size: 14px;
     font-weight: 500;
+
     transition: background 0.2s ease, color 0.2s ease;
 }
 
 .sidebar-menu a i {
     width: 22px;
     min-width: 22px;
+
     text-align: center;
     font-size: 16px;
 }
-
-/* HOVER */
 
 .sidebar-menu a:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
 }
 
-/* ACTIVE MENU */
-
 .sidebar-menu a.active {
-    background: #f97316;
+    background: var(--sidebar-orange);
     color: #ffffff;
+
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
 }
 
-/* =========================================================
-   FIXED SETTINGS AND LOGOUT FOOTER
-========================================================= */
+/* =====================================================
+   SETTINGS AND LOGOUT FOOTER
+   Footer stays inside the sidebar so it moves with it.
+===================================================== */
 
 .sidebar-footer {
-    position: fixed;
+    position: sticky;
     bottom: 0;
-    left: 0;
-    width: 260px;
+
+    flex-shrink: 0;
+    width: 100%;
+
+    margin-top: auto;
     padding: 12px 15px;
+
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     background: #172033;
-    z-index: 1001;
+
+    z-index: 2;
 }
 
-/* SETTINGS BUTTON */
+/* SETTINGS */
 
 .sidebar .settings-btn {
     display: flex;
     align-items: center;
     gap: 12px;
+
     width: 100%;
     min-height: 42px;
     padding: 10px 15px;
-    color: #cbd5e1;
-    text-decoration: none;
-    border-radius: 8px;
     margin-bottom: 6px;
+
+    color: var(--sidebar-text);
+    text-decoration: none;
+
+    border-radius: 8px;
+
     font-size: 14px;
     font-weight: 500;
+
     transition: background 0.2s ease, color 0.2s ease;
 }
 
 .sidebar .settings-btn i {
     width: 22px;
     min-width: 22px;
+
     text-align: center;
     font-size: 16px;
 }
@@ -222,32 +308,40 @@ $logoPath = '../images/beadle.png';
 }
 
 .sidebar .settings-btn.active {
-    background: #f97316;
+    background: var(--sidebar-orange);
     color: #ffffff;
+
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
 }
 
-/* LOGOUT BUTTON */
+/* LOGOUT */
 
 .sidebar .logout-btn {
     display: flex;
     align-items: center;
     gap: 12px;
+
     width: 100%;
     min-height: 42px;
     padding: 10px 15px;
+
     color: #fca5a5;
     text-decoration: none;
+
     border-radius: 8px;
+
     font-size: 14px;
     font-weight: 500;
-    transition: background 0.2s ease, color 0.2s ease;
+
     background: rgba(239, 68, 68, 0.1);
+
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
 .sidebar .logout-btn i {
     width: 22px;
     min-width: 22px;
+
     text-align: center;
     font-size: 16px;
 }
@@ -257,61 +351,163 @@ $logoPath = '../images/beadle.png';
     color: #ffffff;
 }
 
-/* =========================================================
+/* =====================================================
    MAIN CONTENT
-========================================================= */
+===================================================== */
 
 .main-content {
-    margin-left: 260px;
+    margin-left: var(--sidebar-width);
     min-height: 100vh;
+
     box-sizing: border-box;
 }
 
-/* =========================================================
+/* =====================================================
+   MOBILE OVERLAY
+===================================================== */
+
+.sidebar-overlay {
+    display: none;
+}
+
+/* =====================================================
    MOBILE RESPONSIVENESS
-========================================================= */
+===================================================== */
 
 @media (max-width: 768px) {
+
+    /* Sidebar starts hidden off-screen */
     .sidebar {
         width: 260px;
         max-width: 85vw;
-        transform: translateX(-100%);
+
+        height: 100vh;
+        height: 100dvh;
+
+        transform: translateX(-105%);
+        transition: transform 0.3s ease;
+
+        z-index: 1101;
+
+        box-shadow: none;
     }
 
+    /* Show sidebar when opened */
     .sidebar.open {
         transform: translateX(0);
+        box-shadow: 8px 0 30px rgba(0, 0, 0, 0.25);
     }
 
-    .sidebar-footer {
-        width: 260px;
-        max-width: 85vw;
+    /* Display the hamburger button */
+    .mobile-menu-btn {
+        display: inline-flex;
     }
 
-    .main-content {
-        margin-left: 0;
+    /* Dark overlay behind the sidebar */
+    .sidebar-overlay.show {
+        display: block;
+
+        position: fixed;
+        inset: 0;
+
         width: 100%;
+        height: 100vh;
+        height: 100dvh;
+
+        background: rgba(15, 23, 42, 0.58);
+
+        z-index: 1100;
+        cursor: pointer;
+
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Main content occupies full width */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Keep the sidebar footer within the sidebar */
+    .sidebar-footer {
+        position: sticky;
+        bottom: 0;
+        width: 100%;
+        max-width: none;
+    }
+
+    /* Prevent the page from scrolling sideways */
+    body.sidebar-menu-open {
+        overflow: hidden;
     }
 }
 
-@media (max-width: 380px) {
-    .sidebar-logo img {
-        height: 72px;
-    }
+/* =====================================================
+   SMALL PHONES
+===================================================== */
 
+@media (max-width: 380px) {
     .sidebar-header {
         padding: 16px 12px;
+    }
+
+    .sidebar-logo img {
+        height: 72px;
     }
 
     .sidebar-menu {
         padding-left: 12px;
         padding-right: 12px;
     }
+
+    .sidebar-footer {
+        padding: 10px 12px;
+    }
+
+    .mobile-menu-btn {
+        width: 42px;
+        height: 42px;
+    }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar {
+        transition: none;
+    }
 }
 </style>
 
-<!-- =======================================================
+<!-- =====================================================
+     MOBILE MENU BUTTON
+     Automatically inserted before the sidebar.
+===================================================== -->
+
+<button
+    type="button"
+    class="mobile-menu-btn"
+    id="mobileMenuBtn"
+    aria-label="Open navigation menu"
+    aria-controls="sidebar"
+    aria-expanded="false"
+>
+    <i class="fa-solid fa-bars" aria-hidden="true"></i>
+</button>
+
+<!-- =====================================================
+     DARK OVERLAY
+===================================================== -->
+
+<div
+    class="sidebar-overlay"
+    id="sidebarOverlay"
+    aria-hidden="true"
+></div>
+
+<!-- =====================================================
      ADMIN SIDEBAR
-======================================================= -->
+===================================================== -->
 
 <aside class="sidebar" id="sidebar">
 
@@ -333,7 +529,7 @@ $logoPath = '../images/beadle.png';
     </div>
 
     <!-- NAVIGATION MENU -->
-    <nav class="sidebar-menu">
+    <nav class="sidebar-menu" aria-label="Admin navigation">
 
         <!-- MAIN MENU -->
         <div class="menu-label">
@@ -347,7 +543,10 @@ $logoPath = '../images/beadle.png';
                 class="<?= $currentPage === $item['file'] ? 'active' : '' ?>"
                 <?= $currentPage === $item['file'] ? 'aria-current="page"' : '' ?>
             >
-                <i class="<?= htmlspecialchars($item['icon'], ENT_QUOTES, 'UTF-8') ?>"></i>
+                <i
+                    class="<?= htmlspecialchars($item['icon'], ENT_QUOTES, 'UTF-8') ?>"
+                    aria-hidden="true"
+                ></i>
 
                 <span>
                     <?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') ?>
@@ -368,7 +567,10 @@ $logoPath = '../images/beadle.png';
                 class="<?= $currentPage === $item['file'] ? 'active' : '' ?>"
                 <?= $currentPage === $item['file'] ? 'aria-current="page"' : '' ?>
             >
-                <i class="<?= htmlspecialchars($item['icon'], ENT_QUOTES, 'UTF-8') ?>"></i>
+                <i
+                    class="<?= htmlspecialchars($item['icon'], ENT_QUOTES, 'UTF-8') ?>"
+                    aria-hidden="true"
+                ></i>
 
                 <span>
                     <?= htmlspecialchars($item['label'], ENT_QUOTES, 'UTF-8') ?>
@@ -388,16 +590,118 @@ $logoPath = '../images/beadle.png';
             class="settings-btn <?= $currentPage === 'settings.php' ? 'active' : '' ?>"
             <?= $currentPage === 'settings.php' ? 'aria-current="page"' : '' ?>
         >
-            <i class="fa-solid fa-gear"></i>
+            <i class="fa-solid fa-gear" aria-hidden="true"></i>
             <span>Settings</span>
         </a>
 
         <!-- LOGOUT -->
         <a href="../logout.php" class="logout-btn">
-            <i class="fa-solid fa-right-from-bracket"></i>
+            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
             <span>Logout</span>
         </a>
 
     </div>
 
 </aside>
+
+<script>
+(function () {
+    'use strict';
+
+    const sidebar = document.getElementById('sidebar');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    if (!sidebar || !menuBtn || !overlay) {
+        return;
+    }
+
+    // Prevent duplicate event listeners if this script is included twice.
+    if (menuBtn.dataset.sidebarInitialized === 'true') {
+        return;
+    }
+
+    menuBtn.dataset.sidebarInitialized = 'true';
+
+    const icon = menuBtn.querySelector('i');
+    const mobileBreakpoint = 768;
+
+    function isMobile() {
+        return window.matchMedia(
+            '(max-width: ' + mobileBreakpoint + 'px)'
+        ).matches;
+    }
+
+    function openSidebar() {
+        if (!isMobile()) {
+            return;
+        }
+
+        sidebar.classList.add('open');
+        overlay.classList.add('show');
+        document.body.classList.add('sidebar-menu-open');
+
+        menuBtn.setAttribute('aria-expanded', 'true');
+        menuBtn.setAttribute('aria-label', 'Close navigation menu');
+
+        if (icon) {
+            icon.classList.remove('fa-bars');
+            icon.classList.add('fa-xmark');
+        }
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+        document.body.classList.remove('sidebar-menu-open');
+
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.setAttribute('aria-label', 'Open navigation menu');
+
+        if (icon) {
+            icon.classList.remove('fa-xmark');
+            icon.classList.add('fa-bars');
+        }
+    }
+
+    function toggleSidebar() {
+        if (sidebar.classList.contains('open')) {
+            closeSidebar();
+        } else {
+            openSidebar();
+        }
+    }
+
+    // Hamburger button opens and closes the sidebar.
+    menuBtn.addEventListener('click', toggleSidebar);
+
+    // Clicking outside the sidebar closes it.
+    overlay.addEventListener('click', closeSidebar);
+
+    // Escape key closes the sidebar.
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeSidebar();
+        }
+    });
+
+    // Close after selecting a menu link on mobile.
+    sidebar.querySelectorAll('a').forEach(function (link) {
+        link.addEventListener('click', function () {
+            if (isMobile()) {
+                closeSidebar();
+            }
+        });
+    });
+
+    // Reset sidebar state when switching back to desktop width.
+    window.addEventListener('resize', function () {
+        if (!isMobile()) {
+            closeSidebar();
+        }
+    });
+
+    // Initialize in the correct state.
+    closeSidebar();
+})();
+</script>
