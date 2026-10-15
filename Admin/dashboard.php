@@ -834,39 +834,58 @@ function attendancePercentage($value, $total)
 </head>
 <body>
 
-<?php include 'sidebar.php'; ?>
-
 <div class="main-content">
+
     <!-- TOPBAR -->
     <header class="topbar">
+
         <div class="topbar-left">
-            <div class="page-title">Dashboard</div>
-            <div class="breadcrumb">
-                <i class="fa-solid fa-house"></i>
-                <span>Home</span>
-                <i class="fa-solid fa-chevron-right" style="font-size: 9px;"></i>
-                <span>Dashboard</span>
+
+            <!-- SIDEBAR INCLUDE -->
+            <?php include 'sidebar.php'; ?>
+
+            <div class="header-title-wrapper">
+                <div class="page-title">Dashboard</div>
+
+                <div class="breadcrumb">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Home</span>
+                    <i class="fa-solid fa-chevron-right"
+                       style="font-size: 9px;"></i>
+                    <span>Dashboard</span>
+                </div>
             </div>
+
         </div>
 
         <div class="topbar-right">
-            <button type="button" class="notification-btn" aria-label="Notifications" title="Notifications">
+
+            <button type="button"
+                    class="notification-btn"
+                    aria-label="Notifications"
+                    title="Notifications">
                 <i class="fa-solid fa-bell"></i>
                 <span class="notif-badge">3</span>
             </button>
 
             <div class="user-profile">
+
                 <div class="user-avatar">
                     <?= htmlspecialchars(strtoupper(substr($admin_name, 0, 1))); ?>
                 </div>
+
                 <div class="user-info">
                     <div class="user-name">
                         <?= htmlspecialchars($admin_name); ?>
                     </div>
+
                     <div class="user-role">Administrator</div>
                 </div>
+
             </div>
+
         </div>
+
     </header>
 
     <!-- CONTENT AREA -->
