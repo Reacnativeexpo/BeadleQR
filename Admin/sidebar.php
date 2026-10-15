@@ -369,6 +369,106 @@ $logoPath = '../images/beadle.png';
 .sidebar-overlay {
     display: none;
 }
+    
+/* MAIN CONTENT */
+.main-content {
+    min-height: 100vh;
+    min-width: 0;
+}
+
+/* FIXED TOP HEADER */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    width: 100%;
+    min-height: 75px;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+
+    padding: 12px 25px;
+
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* LEFT HEADER SECTION */
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 0;
+}
+
+.header-title-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* RIGHT HEADER SECTION */
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* KEEP CONTENT BELOW HEADER */
+.dashboard-content {
+    padding: 25px;
+}
+
+/* MOBILE RESPONSIVENESS */
+@media (max-width: 768px) {
+    .topbar {
+        padding: 12px 15px;
+        gap: 10px;
+    }
+
+    .topbar-left {
+        gap: 10px;
+    }
+
+    .page-title {
+        font-size: 18px;
+    }
+
+    .breadcrumb {
+        font-size: 11px;
+    }
+
+    .topbar-right {
+        gap: 10px;
+    }
+
+    .user-info {
+        display: none;
+    }
+
+    .dashboard-content {
+        padding: 15px;
+    }
+}
+
 
 /* =====================================================
    MOBILE RESPONSIVENESS
