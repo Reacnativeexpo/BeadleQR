@@ -1329,14 +1329,7 @@ function safeChartJson($value): string
                                             <i class="fa-solid fa-clipboard-check"></i> Attendance
                                         </a>
 
-                                        <button
-                                            type="button"
-                                            class="btn-action btn-beader"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#beaderModal"
-                                            onclick="setSchedule(<?= (int)$row['id'] ?>)">
-                                            <i class="fa-solid fa-user-check"></i> Beader
-                                        </button>
+                                     
 
                                     </div>
                                 </td>
