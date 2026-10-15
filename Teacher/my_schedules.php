@@ -2334,7 +2334,7 @@ foreach ($schedules as $schedule) {
                                         <!-- ATTENDANCE -->
 
                                         <a
-                                            href="attendance.php?schedule_id=<?= e(
+                                            href="view_attendance.php?schedule_id=<?= e(
                                                 $row['id']
                                             ) ?>"
                                             class="btn btn-dark btn-sm"
