@@ -834,36 +834,59 @@ function attendancePercentage($value, $total)
 </head>
 <body>
 
+<?php include 'sidebar.php'; ?>
+
 <div class="main-content">
 
-    <!-- TOPBAR -->
+    <!-- TOP HEADER -->
     <header class="topbar">
 
         <div class="topbar-left">
 
-            <!-- SIDEBAR INCLUDE -->
-            <?php include 'sidebar.php'; ?>
+            <!-- MOBILE MENU BUTTON -->
+            <button
+                type="button"
+                class="mobile-menu-btn"
+                id="mobileMenuBtn"
+                aria-label="Open navigation menu"
+                aria-controls="sidebar"
+                aria-expanded="false"
+            >
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
 
+            <!-- PAGE TITLE -->
             <div class="header-title-wrapper">
-                <div class="page-title">Dashboard</div>
+
+                <div class="page-title">
+                    Dashboard
+                </div>
 
                 <div class="breadcrumb">
                     <i class="fa-solid fa-house"></i>
                     <span>Home</span>
-                    <i class="fa-solid fa-chevron-right"
-                       style="font-size: 9px;"></i>
+
+                    <i
+                        class="fa-solid fa-chevron-right"
+                        style="font-size: 9px;"
+                    ></i>
+
                     <span>Dashboard</span>
                 </div>
+
             </div>
 
         </div>
 
+        <!-- HEADER RIGHT -->
         <div class="topbar-right">
 
-            <button type="button"
-                    class="notification-btn"
-                    aria-label="Notifications"
-                    title="Notifications">
+            <button
+                type="button"
+                class="notification-btn"
+                aria-label="Notifications"
+                title="Notifications"
+            >
                 <i class="fa-solid fa-bell"></i>
                 <span class="notif-badge">3</span>
             </button>
@@ -871,15 +894,27 @@ function attendancePercentage($value, $total)
             <div class="user-profile">
 
                 <div class="user-avatar">
-                    <?= htmlspecialchars(strtoupper(substr($admin_name, 0, 1))); ?>
+                    <?= htmlspecialchars(
+                        strtoupper(substr($admin_name ?? 'A', 0, 1)),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ); ?>
                 </div>
 
                 <div class="user-info">
+
                     <div class="user-name">
-                        <?= htmlspecialchars($admin_name); ?>
+                        <?= htmlspecialchars(
+                            $admin_name ?? 'Administrator',
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ); ?>
                     </div>
 
-                    <div class="user-role">Administrator</div>
+                    <div class="user-role">
+                        Administrator
+                    </div>
+
                 </div>
 
             </div>
