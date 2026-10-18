@@ -1758,7 +1758,7 @@ function attendancePercentage($value, $total)
 
             <div class="actions-grid">
 
-                <a href="teachers.php" class="action-card">
+                <a href="add_teacher.php" class="action-card">
 
                     <div class="action-icon">
                         <i class="fa-solid fa-chalkboard-user"></i>
