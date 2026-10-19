@@ -275,13 +275,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     $conn->commit();
-
-                    $message = sprintf(
-                        'Subject "%s" permanently deleted. Removed %d schedule(s), %d QR session(s), and %d attendance record(s).',
-                        $subject['subject_name'],
-                        $schedulesDeleted,
-                        $sessionsDeleted,
-                        $attendanceDeleted
+$message = "Subject deleted successfully!";
+$messageType = "success";
                     );
                 } catch (Throwable $deleteError) {
                     if ($conn->inTransaction()) {
