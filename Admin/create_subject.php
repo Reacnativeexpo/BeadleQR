@@ -21,24 +21,29 @@ $csrf_token = $_SESSION['csrf_token'];
 $message = "";
 $messageType = "success";
 
+function e($value) {
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
+}
+
 /* =========================================================
-   HANDLE ADD, EDIT AND DELETE
+   HANDLE ADD, EDIT, AND FORCE DELETE
 ========================================================= */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postedToken = $_POST['csrf_token'] ?? '';
 
-    if (!is_string($postedToken) ||
-        !hash_equals($_SESSION['csrf_token'], $postedToken)) {
-
+    if (
+        !is_string($postedToken) ||
+        !hash_equals($_SESSION['csrf_token'], $postedToken)
+    ) {
         $message = "Invalid request. Please refresh the page and try again.";
         $messageType = "danger";
-
     } else {
-
         try {
-            /* ADD SUBJECT */
-            if (isset($_POST['add_subject'])) {
 
+            /* =================================================
+               ADD SUBJECT
+            ================================================= */
+            if (isset($_POST['add_subject'])) {
                 $subject_code = trim($_POST['subject_code'] ?? '');
                 $subject_name = trim($_POST['subject_name'] ?? '');
                 $year_level_id = filter_var(
@@ -47,31 +52,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 $description = trim($_POST['description'] ?? '');
 
-                if ($subject_code === '' || $subject_name === '' ||
-                    !$year_level_id || $year_level_id < 1) {
-                    throw new Exception("Please complete all required fields.");
+                if (
+                    $subject_code === '' ||
+                    $subject_name === '' ||
+                    !$year_level_id ||
+                    $year_level_id < 1
+                ) {
+                    throw new Exception(
+                        "Please complete all required fields."
+                    );
                 }
 
                 $checkYear = $conn->prepare(
-                    "SELECT id FROM year_levels WHERE id = :id"
+                    "SELECT id FROM public.year_levels WHERE id = :id"
                 );
                 $checkYear->execute(['id' => $year_level_id]);
 
                 if (!$checkYear->fetchColumn()) {
-                    throw new Exception("Please select a valid year level.");
+                    throw new Exception(
+                        "Please select a valid year level."
+                    );
                 }
 
-                $checkCode = $conn->prepare(
-                    "SELECT id FROM subjects WHERE subject_code = :code"
-                );
+                $checkCode = $conn->prepare("
+                    SELECT id
+                    FROM public.subjects
+                    WHERE subject_code = :code
+                ");
                 $checkCode->execute(['code' => $subject_code]);
 
                 if ($checkCode->fetchColumn()) {
-                    throw new Exception("That subject code already exists.");
+                    throw new Exception(
+                        "That subject code already exists."
+                    );
                 }
 
                 $stmt = $conn->prepare("
-                    INSERT INTO subjects
+                    INSERT INTO public.subjects
                         (subject_code, subject_name, year_level_id, description)
                     VALUES
                         (:code, :name, :year_id, :description)
@@ -81,15 +98,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'code' => $subject_code,
                     'name' => $subject_name,
                     'year_id' => $year_level_id,
-                    'description' => $description
+                    'description' => $description !== ''
+                        ? $description
+                        : null
                 ]);
 
                 $message = "Subject added successfully!";
             }
 
-            /* EDIT SUBJECT */
+            /* =================================================
+               EDIT SUBJECT
+            ================================================= */
             elseif (isset($_POST['edit_subject'])) {
-
                 $id = filter_var(
                     $_POST['subject_id'] ?? '',
                     FILTER_VALIDATE_INT
@@ -103,14 +123,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
                 $description = trim($_POST['description'] ?? '');
 
-                if (!$id || $id < 1 || $subject_code === '' ||
-                    $subject_name === '' || !$year_level_id ||
-                    $year_level_id < 1) {
-                    throw new Exception("Please complete all required fields.");
+                if (
+                    !$id || $id < 1 ||
+                    $subject_code === '' ||
+                    $subject_name === '' ||
+                    !$year_level_id || $year_level_id < 1
+                ) {
+                    throw new Exception(
+                        "Please complete all required fields."
+                    );
                 }
 
                 $checkSubject = $conn->prepare(
-                    "SELECT id FROM subjects WHERE id = :id"
+                    "SELECT id FROM public.subjects WHERE id = :id"
                 );
                 $checkSubject->execute(['id' => $id]);
 
@@ -119,19 +144,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $checkYear = $conn->prepare(
-                    "SELECT id FROM year_levels WHERE id = :id"
+                    "SELECT id FROM public.year_levels WHERE id = :id"
                 );
                 $checkYear->execute(['id' => $year_level_id]);
 
                 if (!$checkYear->fetchColumn()) {
-                    throw new Exception("Please select a valid year level.");
+                    throw new Exception(
+                        "Please select a valid year level."
+                    );
                 }
 
                 $checkCode = $conn->prepare("
                     SELECT id
-                    FROM subjects
+                    FROM public.subjects
                     WHERE subject_code = :code
-                      AND id != :id
+                      AND id <> :id
                 ");
                 $checkCode->execute([
                     'code' => $subject_code,
@@ -145,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
 
                 $stmt = $conn->prepare("
-                    UPDATE subjects
+                    UPDATE public.subjects
                     SET
                         subject_code = :code,
                         subject_name = :name,
@@ -158,16 +185,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'code' => $subject_code,
                     'name' => $subject_name,
                     'year_id' => $year_level_id,
-                    'description' => $description,
+                    'description' => $description !== ''
+                        ? $description
+                        : null,
                     'id' => $id
                 ]);
 
                 $message = "Subject updated successfully!";
             }
 
-            /* DELETE SUBJECT */
-            elseif (isset($_POST['delete_subject'])) {
-
+            /* =================================================
+               PERMANENT FORCE DELETE
+               Order:
+               1. teacher_attendance
+               2. attendance_sessions
+               3. schedules
+               4. subjects
+            ================================================= */
+            elseif (isset($_POST['force_delete_subject'])) {
                 $id = filter_var(
                     $_POST['subject_id'] ?? '',
                     FILTER_VALIDATE_INT
@@ -177,36 +212,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     throw new Exception("Invalid subject selected.");
                 }
 
-                $checkSubject = $conn->prepare(
-                    "SELECT id FROM subjects WHERE id = :id"
-                );
-                $checkSubject->execute(['id' => $id]);
+                $conn->beginTransaction();
 
-                if (!$checkSubject->fetchColumn()) {
-                    throw new Exception("Subject not found.");
+                try {
+                    /* Lock and verify the subject. */
+                    $checkSubject = $conn->prepare("
+                        SELECT id, subject_name
+                        FROM public.subjects
+                        WHERE id = :id
+                        FOR UPDATE
+                    ");
+                    $checkSubject->execute(['id' => $id]);
+                    $subject = $checkSubject->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$subject) {
+                        throw new Exception("Subject not found.");
+                    }
+
+                    /*
+                     * Delete attendance records connected to schedules
+                     * for this subject. Delete these before sessions and
+                     * schedules because they reference those records.
+                     */
+                    $deleteAttendance = $conn->prepare("
+                        DELETE FROM public.teacher_attendance
+                        WHERE schedule_id IN (
+                            SELECT id
+                            FROM public.schedules
+                            WHERE subject_id = :subject_id
+                        )
+                    ");
+                    $deleteAttendance->execute([
+                        'subject_id' => $id
+                    ]);
+                    $attendanceDeleted = $deleteAttendance->rowCount();
+
+                    /*
+                     * Delete QR sessions for the subject's schedules.
+                     */
+                    $deleteSessions = $conn->prepare("
+                        DELETE FROM public.attendance_sessions
+                        WHERE schedule_id IN (
+                            SELECT id
+                            FROM public.schedules
+                            WHERE subject_id = :subject_id
+                        )
+                    ");
+                    $deleteSessions->execute([
+                        'subject_id' => $id
+                    ]);
+                    $sessionsDeleted = $deleteSessions->rowCount();
+
+                    /*
+                     * Remove teacher schedule assignments for this subject.
+                     */
+                    $deleteSchedules = $conn->prepare("
+                        DELETE FROM public.schedules
+                        WHERE subject_id = :subject_id
+                    ");
+                    $deleteSchedules->execute([
+                        'subject_id' => $id
+                    ]);
+                    $schedulesDeleted = $deleteSchedules->rowCount();
+
+                    /*
+                     * Finally delete the subject.
+                     */
+                    $deleteSubject = $conn->prepare("
+                        DELETE FROM public.subjects
+                        WHERE id = :id
+                    ");
+                    $deleteSubject->execute(['id' => $id]);
+
+                    if ($deleteSubject->rowCount() !== 1) {
+                        throw new Exception(
+                            "The subject could not be deleted."
+                        );
+                    }
+
+                    $conn->commit();
+
+                    $message = sprintf(
+                        'Subject "%s" permanently deleted. Removed %d schedule(s), %d QR session(s), and %d attendance record(s).',
+                        $subject['subject_name'],
+                        $schedulesDeleted,
+                        $sessionsDeleted,
+                        $attendanceDeleted
+                    );
+                } catch (Throwable $deleteError) {
+                    if ($conn->inTransaction()) {
+                        $conn->rollBack();
+                    }
+
+                    throw $deleteError;
                 }
-
-                $stmt = $conn->prepare(
-                    "DELETE FROM subjects WHERE id = :id"
-                );
-                $stmt->execute(['id' => $id]);
-
-                $message = "Subject deleted successfully!";
             }
 
         } catch (PDOException $e) {
             error_log("Subject management error: " . $e->getMessage());
 
-            if ($e->getCode() === '23000') {
-                $message = "Unable to delete this subject because it is being used by schedules or other records. Remove or reassign those records first.";
+            if ($e->getCode() === '23503') {
+                $message = "Deletion was blocked because another database record still references this subject or its related records. No partial deletion was committed. Check the database foreign-key relationships.";
             } else {
-                $message = "A database error occurred. Please try again.";
+                $message = "A database error occurred. No partial deletion was committed where the operation was inside a transaction. Please check the server logs.";
             }
 
             $messageType = "danger";
 
-        } catch (Exception $e) {
-            $message = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log("Subject operation error: " . $e->getMessage());
+            $message = $e instanceof Exception
+                ? $e->getMessage()
+                : "An unexpected error occurred. Please try again.";
             $messageType = "danger";
         }
     }
@@ -217,7 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ========================================================= */
 $year_levels = $conn->query("
     SELECT id, year_name
-    FROM year_levels
+    FROM public.year_levels
     ORDER BY id ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -226,23 +343,19 @@ $year_levels = $conn->query("
 ========================================================= */
 $subjects = $conn->query("
     SELECT
-        subjects.id,
-        subjects.subject_code,
-        subjects.subject_name,
-        subjects.year_level_id,
-        subjects.description,
-        year_levels.year_name
-    FROM subjects
-    LEFT JOIN year_levels
-        ON subjects.year_level_id = year_levels.id
-    ORDER BY subjects.id DESC
+        s.id,
+        s.subject_code,
+        s.subject_name,
+        s.year_level_id,
+        s.description,
+        y.year_name
+    FROM public.subjects s
+    LEFT JOIN public.year_levels y
+        ON s.year_level_id = y.id
+    ORDER BY s.id DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 $adminName = $_SESSION['fullname'] ?? 'Admin';
-
-function e($value) {
-    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
-}
 ?>
 
 <!DOCTYPE html>
@@ -484,6 +597,7 @@ function e($value) {
         .alert-message {
             border-radius: 12px;
             font-size: 13px;
+            overflow-wrap: anywhere;
         }
 
         .table-wrapper {
@@ -712,6 +826,44 @@ function e($value) {
             background: #cbd5e1;
         }
 
+        .delete-warning-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: #fef2f2;
+            color: #dc2626;
+            font-size: 27px;
+        }
+
+        .delete-warning {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .btn-permanent-delete {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn-permanent-delete:hover {
+            background: #b91c1c;
+            color: white;
+        }
+
         @media (max-width: 992px) {
             .main-content {
                 margin-left: 0;
@@ -828,8 +980,8 @@ function e($value) {
     <header class="topbar">
         <div>
             <div class="d-flex align-items-center gap-2">
-                <button class="mobile-menu-btn" id="mobileMenuBtn" type="button"
-                        aria-label="Toggle sidebar">
+                <button class="mobile-menu-btn" id="mobileMenuBtn"
+                        type="button" aria-label="Toggle sidebar">
                     <i class="fa-solid fa-bars"></i>
                 </button>
                 <h1 class="page-title">Subjects</h1>
@@ -841,7 +993,8 @@ function e($value) {
         </div>
 
         <div class="topbar-right">
-            <button type="button" class="notification-btn" title="Notifications">
+            <button type="button" class="notification-btn"
+                    title="Notifications">
                 <i class="fa-regular fa-bell"></i>
             </button>
 
@@ -887,7 +1040,8 @@ function e($value) {
                     </div>
                 </div>
 
-                <button type="button" class="btn-add" onclick="openAddModal()">
+                <button type="button" class="btn-add"
+                        onclick="openAddModal()">
                     <i class="fa-solid fa-plus me-1"></i>
                     Add Subject
                 </button>
@@ -899,8 +1053,11 @@ function e($value) {
                     <div class="alert alert-<?= e($messageType); ?> alert-dismissible fade show alert-message"
                          role="alert">
                         <i class="fa-solid <?= $messageType === 'success'
-                            ? 'fa-circle-check' : 'fa-circle-exclamation'; ?> me-2"></i>
+                            ? 'fa-circle-check'
+                            : 'fa-circle-exclamation'; ?> me-2"></i>
+
                         <?= e($message); ?>
+
                         <button type="button" class="btn-close"
                                 data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
@@ -914,7 +1071,7 @@ function e($value) {
                                 <th>Subject Name</th>
                                 <th>Year Level</th>
                                 <th>Description</th>
-                                <th style="width: 110px;">Actions</th>
+                                <th style="width:110px;">Actions</th>
                             </tr>
                         </thead>
 
@@ -959,14 +1116,15 @@ function e($value) {
                                         <span class="description-text">
                                             <?= e(
                                                 trim((string)($row['description'] ?? '')) !== ''
-                                                ? $row['description']
-                                                : 'No description'
+                                                    ? $row['description']
+                                                    : 'No description'
                                             ); ?>
                                         </span>
                                     </td>
 
                                     <td>
                                         <div class="action-buttons">
+
                                             <button type="button"
                                                 class="btn-edit"
                                                 title="Edit Subject"
@@ -980,22 +1138,16 @@ function e($value) {
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </button>
 
-                                            <form method="POST" class="d-inline"
-                                                onsubmit="return confirm('Are you sure you want to delete the subject <?= e($row['subject_name']); ?>? This action cannot be undone.');">
-                                                <input type="hidden" name="csrf_token"
-                                                       value="<?= e($csrf_token); ?>">
-                                                <input type="hidden" name="subject_id"
-                                                       value="<?= (int)$row['id']; ?>">
+                                            <button type="button"
+                                                class="btn-delete"
+                                                title="Permanently Delete"
+                                                aria-label="Permanently delete subject"
+                                                data-id="<?= (int)$row['id']; ?>"
+                                                data-name="<?= e($row['subject_name']); ?>"
+                                                onclick="openDeleteModal(this)">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
 
-                                                <button type="submit"
-                                                    name="delete_subject"
-                                                    value="1"
-                                                    class="btn-delete"
-                                                    title="Delete Subject"
-                                                    aria-label="Delete subject">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            </form>
                                         </div>
                                     </td>
                                 </tr>
@@ -1046,7 +1198,8 @@ function e($value) {
                         </label>
                         <input type="text" name="subject_code" id="subject_code"
                                required maxlength="100"
-                               placeholder="Enter subject code" autocomplete="off">
+                               placeholder="Enter subject code"
+                               autocomplete="off">
                     </div>
 
                     <div class="form-group">
@@ -1055,7 +1208,8 @@ function e($value) {
                         </label>
                         <input type="text" name="subject_name" id="subject_name"
                                required maxlength="255"
-                               placeholder="Enter subject name" autocomplete="off">
+                               placeholder="Enter subject name"
+                               autocomplete="off">
                     </div>
 
                     <div class="form-group">
@@ -1088,14 +1242,86 @@ function e($value) {
                             Cancel
                         </button>
 
-                        <button type="submit" name="add_subject" id="saveSubjectButton"
-                                value="1" class="btn-save">
+                        <button type="submit" name="add_subject"
+                                id="saveSubjectButton" value="1"
+                                class="btn-save">
                             <i class="fa-solid fa-floppy-disk me-1"></i>
                             Save Subject
                         </button>
                     </div>
 
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================================================
+     PERMANENT DELETE CONFIRMATION MODAL
+========================================================= -->
+<div class="modal fade" id="deleteSubjectModal" tabindex="-1"
+     aria-labelledby="deleteSubjectModalTitle" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered"
+         style="max-width:480px;">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteSubjectModalTitle">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    Permanently Delete Subject?
+                </h5>
+
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body text-center">
+
+                <div class="delete-warning-icon">
+                    <i class="fa-solid fa-trash-can"></i>
+                </div>
+
+                <h6 class="fw-bold mb-2" id="deleteSubjectName">
+                    Selected Subject
+                </h6>
+
+                <p class="text-secondary small mb-3">
+                    Are you sure you want to permanently delete this subject?
+                </p>
+
+                <div class="delete-warning text-start">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    <strong>Warning:</strong>
+                    This will permanently delete the subject, its schedules,
+                    QR sessions, and attendance history. This cannot be undone.
+                </div>
+
+                <form method="POST" id="forceDeleteForm">
+                    <input type="hidden" name="csrf_token"
+                           value="<?= e($csrf_token); ?>">
+
+                    <input type="hidden" name="subject_id"
+                           id="delete_subject_id">
+
+                    <div class="actions">
+                        <button type="button" class="btn-cancel"
+                                data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+
+                        <button type="submit"
+                                name="force_delete_subject"
+                                value="1"
+                                class="btn-permanent-delete"
+                                id="confirmPermanentDelete">
+                            <i class="fa-solid fa-trash-can me-1"></i>
+                            Permanently Delete
+                        </button>
+                    </div>
+                </form>
+
             </div>
         </div>
     </div>
@@ -1132,7 +1358,7 @@ if (sidebarOverlay) {
 }
 
 /* =========================================================
-   BOOTSTRAP MODAL
+   ADD / EDIT SUBJECT MODAL
 ========================================================= */
 const subjectModalElement = document.getElementById('subjectModal');
 const subjectModal = new bootstrap.Modal(subjectModalElement);
@@ -1173,6 +1399,45 @@ function openEditModal(button) {
 
     subjectModal.show();
 }
+
+/* =========================================================
+   PERMANENT DELETE CONFIRMATION
+========================================================= */
+const deleteModalElement =
+    document.getElementById('deleteSubjectModal');
+
+const deleteSubjectModal =
+    new bootstrap.Modal(deleteModalElement);
+
+const forceDeleteForm =
+    document.getElementById('forceDeleteForm');
+
+const deleteSubjectId =
+    document.getElementById('delete_subject_id');
+
+const deleteSubjectName =
+    document.getElementById('deleteSubjectName');
+
+const confirmDeleteButton =
+    document.getElementById('confirmPermanentDelete');
+
+function openDeleteModal(button) {
+    deleteSubjectId.value = button.dataset.id;
+    deleteSubjectName.textContent = button.dataset.name;
+
+    confirmDeleteButton.disabled = false;
+    confirmDeleteButton.innerHTML =
+        '<i class="fa-solid fa-trash-can me-1"></i> Permanently Delete';
+
+    deleteSubjectModal.show();
+}
+
+/* Prevent accidental double submission. */
+forceDeleteForm.addEventListener('submit', function () {
+    confirmDeleteButton.disabled = true;
+    confirmDeleteButton.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span> Deleting...';
+});
 </script>
 
 </body>
