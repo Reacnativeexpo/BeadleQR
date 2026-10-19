@@ -2848,9 +2848,7 @@ $teachers = $conn->query("
 
                             <tr>
 
-                                <th width="5%">
-                                    ID
-                                </th>
+                            
 
                                 <th>
                                     Employee ID
@@ -2932,21 +2930,7 @@ $teachers = $conn->query("
                                 <tr>
 
 
-                                    <!-- ID -->
-
-                                    <td>
-
-                                        <span
-                                            class="text-muted fw-semibold"
-                                        >
-
-                                            #<?= htmlspecialchars(
-                                                $row['id']
-                                            ); ?>
-
-                                        </span>
-
-                                    </td>
+                                
 
 
                                     <!-- EMPLOYEE -->
