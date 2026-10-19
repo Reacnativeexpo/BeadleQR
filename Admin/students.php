@@ -106,23 +106,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE STUDENT — DELETE RELATED RECORDS FIRST
+    |--------------------------------------------------------------------------
+    */
+
     if ($action === 'delete' && $student_id) {
 
         try {
 
             $conn->beginTransaction();
 
+            // Confirm the student exists.
+            $checkStudent = $conn->prepare("
+                SELECT id, fullname
+                FROM users
+                WHERE id = :student_id
+                  AND role = 'student'
+                FOR UPDATE
+            ");
 
-            $deleteBeader = $conn->prepare("
+            $checkStudent->execute([
+                ':student_id' => $student_id
+            ]);
+
+            $studentToDelete = $checkStudent->fetch(PDO::FETCH_ASSOC);
+
+            if (!$studentToDelete) {
+                throw new Exception("Student not found.");
+            }
+
+            /*
+             * Delete attendance records associated with this
+             * student's Beader sessions or Beader assignment.
+             */
+            $deleteAttendance = $conn->prepare("
+                DELETE FROM teacher_attendance
+                WHERE beader_id = :beader_id
+                   OR session_id IN (
+                       SELECT id
+                       FROM attendance_sessions
+                       WHERE beader_id = :session_beader_id
+                   )
+            ");
+
+            $deleteAttendance->execute([
+                ':beader_id' => $student_id,
+                ':session_beader_id' => $student_id
+            ]);
+
+            /*
+             * Delete sessions that reference this student.
+             * This fixes attendance_sessions_beader_fkey.
+             */
+            $deleteSessions = $conn->prepare("
+                DELETE FROM attendance_sessions
+                WHERE beader_id = :student_id
+            ");
+
+            $deleteSessions->execute([
+                ':student_id' => $student_id
+            ]);
+
+            /*
+             * Release the section assigned to this Beader.
+             */
+            $deleteAssignments = $conn->prepare("
                 DELETE FROM beader_assignments
                 WHERE beader_id = :student_id
             ");
 
-            $deleteBeader->execute([
+            $deleteAssignments->execute([
                 ':student_id' => $student_id
             ]);
 
-
+            /*
+             * Delete the student account last.
+             */
             $deleteStudent = $conn->prepare("
                 DELETE FROM users
                 WHERE id = :student_id
@@ -133,28 +195,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':student_id' => $student_id
             ]);
 
-
-            if ($deleteStudent->rowCount() === 0) {
-                throw new Exception("Student not found.");
+            if ($deleteStudent->rowCount() !== 1) {
+                throw new Exception(
+                    "Student account could not be deleted."
+                );
             }
-
 
             $conn->commit();
 
-            $message = "Student deleted successfully.";
+            $message = "Student and related Beader records deleted successfully.";
 
-
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
 
             if ($conn->inTransaction()) {
                 $conn->rollBack();
             }
 
-            $error = $e->getMessage();
+            error_log(
+                "Student deletion failed for ID {$student_id}: "
+                . $e->getMessage()
+            );
+
+            $error = "Deletion failed because related database records still exist. "
+                   . "Please check the server error log for the foreign-key constraint.";
         }
 
-
     } else {
+
 
 
         $fullname = trim(
