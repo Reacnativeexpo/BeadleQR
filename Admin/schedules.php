@@ -2251,7 +2251,7 @@ foreach ($schedules as $schedule) {
                         <th>Teacher</th>
                         <th>Room</th>
                         <th>Year & Section</th>
-                        <th>QR Session</th>
+                      
                         <th>Actions</th>
 
                     </tr>
@@ -2392,50 +2392,6 @@ foreach ($schedules as $schedule) {
                             </td>
 
 
-                            <td>
-
-                                <?php if (
-                                    !empty($tc['qr_token']) &&
-                                    $tc['session_status'] === 'active' &&
-                                    !empty($tc['qr_expires_at']) &&
-                                    strtotime($tc['qr_expires_at']) > time()
-                                ): ?>
-
-                                    <span class="badge badge-green">
-                                        Active
-                                    </span>
-
-                                    <br>
-
-                                    <small
-                                        style="
-                                            color:#888;
-                                            font-size:12px;
-                                        "
-                                    >
-
-                                        Beader:
-                                        <?= e(
-                                            $tc['beader_name'] ?? 'N/A'
-                                        ) ?>
-
-                                    </small>
-
-                                <?php elseif (!empty($tc['qr_token'])): ?>
-
-                                    <span class="badge badge-red">
-                                        Expired
-                                    </span>
-
-                                <?php else: ?>
-
-                                    <span class="badge badge-gray">
-                                        No Session
-                                    </span>
-
-                                <?php endif; ?>
-
-                            </td>
 
 
                             <td class="actions">
