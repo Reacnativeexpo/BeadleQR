@@ -726,7 +726,8 @@ body {
             <div class="brand-tagline">Teacher Attendance System</div>
         </div>
 
-        <h1 class="system-title">Smart Teacher Attendance & Classroom Management</h1>
+        <h1 class="system-title">Teacher Attendance
+Monitoring System</h1>
         <p class="system-description">BeadleQR provides a secure and efficient way to record and monitor teacher attendance using QR-based technology.</p>
 
         <ul class="features-list">
