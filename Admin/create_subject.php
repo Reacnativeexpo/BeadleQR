@@ -277,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $conn->commit();
 $message = "Subject deleted successfully!";
 $messageType = "success";
-                    );
+                    
                 } catch (Throwable $deleteError) {
                     if ($conn->inTransaction()) {
                         $conn->rollBack();
